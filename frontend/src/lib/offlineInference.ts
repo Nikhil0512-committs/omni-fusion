@@ -1,4 +1,3 @@
-// Lazy-load onnxruntime-web only at runtime in the browser (never at build time)
 import Dexie, { Table } from 'dexie';
 import { PredictRequest, PredictResponse } from './types';
 
@@ -27,19 +26,18 @@ export const db = new OfflineDB();
 
 /**
  * Run a vitals-only prediction using the quantized ONNX model locally.
- * onnxruntime-web is dynamically imported so it never gets bundled into
- * server-side / build-worker code (which would crash with WorkerError).
+ * onnxruntime-web is dynamically imported so it never crashes build workers.
  */
 export async function runOfflineInference(request: PredictRequest): Promise<PredictResponse> {
   const modelPath = '/models/vitals_model.onnx';
-  
+
   try {
-    // Dynamic import – only loaded in the browser at call time
+    // Dynamic import – only loaded in the browser at call time, never during build
     const ort = await import('onnxruntime-web');
     ort.env.wasm.wasmPaths = '/wasm/';
 
     const session = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
-    
+
     const vitals = request.vitals;
     if (!vitals) throw new Error("Vitals required for offline inference");
     const inputData = Float32Array.from([
@@ -56,22 +54,17 @@ export async function runOfflineInference(request: PredictRequest): Promise<Pred
       vitals.o2
     ]);
 
-    // Shape must match dummy_input in export (1, 11)
     const tensor = new ort.Tensor('float32', inputData, [1, 11]);
-    const feeds = { 'input': tensor }; // 'input' is the name defined in export
-    
+    const feeds = { 'input': tensor };
     const results = await session.run(feeds);
-    
-    // 'output' is the name defined in export, contains just the positive class prob
     const riskScore = results.output.data[0] as number;
-    
-    // Generate an offline client ID
+
     const offlineClientId = 'off_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-    
+
     let triage = "Green";
     if (riskScore > 0.75) triage = "Red";
     else if (riskScore > 0.5) triage = "Yellow";
-    
+
     const response: PredictResponse = {
       predictionId: offlineClientId,
       patientId: request.patientId,
@@ -83,7 +76,6 @@ export async function runOfflineInference(request: PredictRequest): Promise<Pred
       streamsUsed: ["vitals"]
     };
 
-    // Save to queue
     await db.predictions.add({
       offlineClientId,
       request: { ...request, uploadSessionId: undefined },
@@ -93,10 +85,10 @@ export async function runOfflineInference(request: PredictRequest): Promise<Pred
     });
 
     return response;
-    
+
   } catch (err) {
     console.error("Offline inference failed:", err);
-    throw new Error("Unable to run offline inference.");
+    throw new Error("Unable to run offline inference. Please connect to the network for full predictions.");
   }
 }
 
@@ -105,23 +97,19 @@ export async function runOfflineInference(request: PredictRequest): Promise<Pred
  */
 export async function syncOfflinePredictions(apiPredictFn: (req: PredictRequest) => Promise<PredictResponse>) {
   const pending = await db.predictions.where('synced').equals('false').toArray();
-  
+
   if (pending.length === 0) return;
   console.log(`Syncing ${pending.length} offline predictions...`);
-  
+
   for (const item of pending) {
     try {
-      // Add offline_client_id to the request payload for deduplication
       const payload = { ...item.request, offline_client_id: item.offlineClientId };
-      
       const realResponse = await apiPredictFn(payload);
-      
-      // Mark as synced
-      await db.predictions.update(item.id!, { 
+
+      await db.predictions.update(item.id!, {
         synced: true,
-        response: realResponse 
+        response: realResponse
       });
-      
     } catch (e) {
       console.warn(`Failed to sync offline prediction ${item.offlineClientId}`, e);
     }

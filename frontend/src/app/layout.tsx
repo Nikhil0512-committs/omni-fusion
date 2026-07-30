@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   title: "Omni-Fusion Healthcare",
   description: "Multimodal AI Cardiovascular Diagnostic Platform",
   manifest: "/manifest.json",
-  themeColor: "#0f172a",
 };
 
 export default function RootLayout({
