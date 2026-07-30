@@ -32,6 +32,7 @@ export default function PatientReports() {
 
   const downloadReport = async (predictionId: string, url?: string) => {
     setPreparingId(predictionId)
+    setErrorStr(null)
     try {
       let downloadUrl = url
       if (!downloadUrl) {
@@ -40,8 +41,19 @@ export default function PatientReports() {
         setReports(current => current.map(item => item.id === predictionId ? { ...item, reports: [{ ...(item.reports?.[0] || {id:predictionId,createdAt:item.createdAt,pdfStoragePath:''}), downloadUrl }] } : item))
       }
       if (!downloadUrl) throw new Error('No download URL returned')
-      window.open(downloadUrl, '_blank', 'noopener,noreferrer')
-    } catch {
+      
+      if (downloadUrl.startsWith('data:')) {
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = `Omni-Fusion_Report_${predictionId.slice(0, 8)}.pdf`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } else {
+        window.open(downloadUrl, '_blank', 'noopener,noreferrer')
+      }
+    } catch (err: any) {
+      console.error("PDF Download failed:", err)
       setErrorStr('This report could not be prepared. Please try again.')
     } finally {
       setPreparingId(null)
