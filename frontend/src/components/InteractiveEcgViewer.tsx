@@ -77,23 +77,26 @@ export function InteractiveEcgViewer({ rawEcg, gradCam }: InteractiveEcgViewerPr
       ctx.stroke();
     }
 
-    // 4 columns, 3 rows for standard 12-lead layout
+    // 4 rows total: 3 rows for the 12 leads, 1 bottom row for Rhythm Strip (Lead II)
     const cols = 4;
-    const rows = 3;
+    const gridRows = 4;
     const cellWidth = width / cols;
-    const cellHeight = height / rows;
+    const cellHeight = height / gridRows;
 
     // Find min and max for Grad-CAM normalization
     let gcMin = Math.min(...gradCam);
     let gcMax = Math.max(...gradCam);
-    // Add small epsilon to prevent division by zero
     if (gcMax === gcMin) gcMax += 0.0001;
 
+    // DRAW THE 12 LEADS (Top 3 Rows)
     for (let leadIdx = 0; leadIdx < 12; leadIdx++) {
       if (!rawEcg[leadIdx]) continue;
 
-      const row = leadIdx % rows;
-      const col = Math.floor(leadIdx / rows);
+      // Map 0-11 to 3 rows and 4 columns
+      // I, II, III -> Col 0
+      // aVR, aVL, aVF -> Col 1
+      const row = leadIdx % 3;
+      const col = Math.floor(leadIdx / 3);
       
       const offsetX = col * cellWidth;
       const offsetY = row * cellHeight;
@@ -101,11 +104,15 @@ export function InteractiveEcgViewer({ rawEcg, gradCam }: InteractiveEcgViewerPr
       // Draw lead label
       ctx.fillStyle = "#000000";
       ctx.font = "bold 12px Arial";
+      // Add a slight white background behind text for readability
+      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.fillRect(offsetX + 8, offsetY + 8, 30, 16);
+      ctx.fillStyle = "#000000";
       ctx.fillText(LEAD_NAMES[leadIdx], offsetX + 10, offsetY + 20);
 
-      // We only draw 1/4th of the 1000 points per column cell (roughly 2.5 seconds)
-      // Standard 10-second ECG has 2.5s per column in the 4x3 layout
-      const ptsPerCell = Math.floor(1000 / cols);
+      // Each column shows 1/4th of the total points
+      const totalPts = rawEcg[leadIdx].length;
+      const ptsPerCell = Math.floor(totalPts / cols);
       const startIdx = col * ptsPerCell;
       
       const leadData = rawEcg[leadIdx].slice(startIdx, startIdx + ptsPerCell);
@@ -113,9 +120,8 @@ export function InteractiveEcgViewer({ rawEcg, gradCam }: InteractiveEcgViewerPr
 
       const dx = cellWidth / leadData.length;
       const centerY = offsetY + cellHeight / 2;
-      const yScale = 20; // arbitrary scale for visualization
+      const yScale = 20;
 
-      // Draw segments so we can color them individually based on Grad-CAM
       ctx.lineWidth = 1.5;
       
       for (let i = 0; i < leadData.length - 1; i++) {
@@ -133,8 +139,41 @@ export function InteractiveEcgViewer({ rawEcg, gradCam }: InteractiveEcgViewerPr
         ctx.stroke();
       }
     }
+
+    // DRAW RHYTHM STRIP (Bottom Row - Lead II)
+    const rhythmLeadIdx = 1; // Lead II
+    if (rawEcg[rhythmLeadIdx]) {
+      const offsetY = 3 * cellHeight; // 4th row
+      const centerY = offsetY + cellHeight / 2;
+      const rhythmData = rawEcg[rhythmLeadIdx];
+      const dx = width / rhythmData.length;
+      const yScale = 20;
+
+      // Rhythm Strip Label
+      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.fillRect(8, offsetY + 8, 120, 16);
+      ctx.fillStyle = "#000000";
+      ctx.fillText("Rhythm Strip (II)", 10, offsetY + 20);
+
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < rhythmData.length - 1; i++) {
+        const x1 = i * dx;
+        const y1 = centerY - rhythmData[i] * yScale;
+        const x2 = (i + 1) * dx;
+        const y2 = centerY - rhythmData[i + 1] * yScale;
+
+        const gradVal = gradCam[i];
+        ctx.strokeStyle = getHeatmapColor(gradVal, gcMin, gcMax);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+    }
   }, [rawEcg, gradCam]);
 
+  // Adjust height to accommodate 4 rows nicely
   return (
     <div className="w-full bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
       <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -144,7 +183,7 @@ export function InteractiveEcgViewer({ rawEcg, gradCam }: InteractiveEcgViewerPr
           <div className="w-32 h-3 rounded bg-gradient-to-r from-blue-500 via-gray-300 to-red-500" />
         </div>
       </div>
-      <div className="p-4 w-full h-[500px] relative">
+      <div className="p-4 w-full h-[650px] relative">
         <canvas
           ref={canvasRef}
           style={{ width: "100%", height: "100%" }}
