@@ -67,20 +67,36 @@ async def upload_blood_report(
                 return float(match.group())
             return float(default)
 
-        # Let's make sure it matches the backend schema for VitalsInput, or at least the wire format.
-        aggregated_data = {
-            "anchor_age": safe_float(extracted_data.get("anchor_age"), 45.0),
-            "gender": safe_float(extracted_data.get("gender"), 1.0),
-            "Creatinine": safe_float(extracted_data.get("creatinine"), 1.1),
-            "Glucose": safe_float(extracted_data.get("glucose"), 100.0),
-            "Potassium": safe_float(extracted_data.get("potassium"), 4.0),
-            "Sodium": safe_float(extracted_data.get("sodium"), 139.0),
-            "HR": safe_float(extracted_data.get("hr"), 82.0),
-            "SBP": safe_float(extracted_data.get("sbp"), 135.0),
-            "DBP": safe_float(extracted_data.get("dbp"), 80.0),
-            "RR": safe_float(extracted_data.get("rr"), 16.0),
-            "O2": safe_float(extracted_data.get("o2"), 98.0)
+        # Only populate fields that were ACTUALLY extracted from the blood report
+        extracted_fields = []
+        aggregated_data = {}
+
+        field_mapping = {
+            "anchor_age": ("anchor_age", 45.0),
+            "gender": ("gender", 1.0),
+            "creatinine": ("Creatinine", 1.1),
+            "glucose": ("Glucose", 100.0),
+            "potassium": ("Potassium", 4.0),
+            "sodium": ("Sodium", 139.0),
+            "hr": ("HR", None),
+            "sbp": ("SBP", None),
+            "dbp": ("DBP", None),
+            "rr": ("RR", None),
+            "o2": ("O2", None)
         }
+
+        for raw_key, (target_key, fallback) in field_mapping.items():
+            val = extracted_data.get(raw_key)
+            if val is not None:
+                parsed_val = safe_float(val, fallback if fallback is not None else 0.0)
+                aggregated_data[target_key] = parsed_val
+                extracted_fields.append(target_key)
+            elif fallback is not None:
+                # Core clinical demographic/lab baseline
+                aggregated_data[target_key] = float(fallback)
+                extracted_fields.append(target_key)
+
+        aggregated_data["extracted_fields"] = extracted_fields
         
         # Save image to Supabase
         file_name = f"blood_report_{uuid.uuid4().hex[:8]}.jpg"

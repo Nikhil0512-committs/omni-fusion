@@ -50,6 +50,9 @@ async def predict(request: Request, payload: PredictRequest, user_data: dict = D
             prediction = await run_in_threadpool(inference_service.predict, payload)
             if payload.ecg_abnormality:
                 prediction.ecg_abnormality = payload.ecg_abnormality
+            if payload.ecg_image_path or payload.ecg_abnormality:
+                if not any("ecg" in s.lower() for s in prediction.streams_used):
+                    prediction.streams_used.append("12-Lead ECG")
                 
         prediction_id = str(uuid.uuid4())
         prediction.prediction_id = prediction_id
