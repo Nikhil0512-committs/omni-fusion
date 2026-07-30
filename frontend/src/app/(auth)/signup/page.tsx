@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { ArrowLeft, Sparkles } from 'lucide-react'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -28,18 +29,24 @@ export default function SignupPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      // Store intended role in localStorage so we know what onboarding to show
       localStorage.setItem('intended_role', role)
-      
-      // On real signup, Supabase might require email confirmation.
-      // If auto-confirm is on, we can just push to onboarding.
       router.push(`/onboarding/${role.toLowerCase()}`)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 p-4">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center p-4 md:p-8">
+      {/* Top Header Navigation */}
+      <div className="w-full max-w-md mb-6 flex items-center justify-between border-b border-slate-800 pb-4">
+        <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium">
+          <ArrowLeft className="w-4 h-4" /> Back to Landing Page
+        </Link>
+        <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+          Omni-Fusion
+        </Link>
+      </div>
+
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8 my-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
             Join Omni-Fusion
@@ -106,6 +113,13 @@ export default function SignupPage() {
           Already have an account?{' '}
           <Link href="/login" className="text-blue-400 hover:text-blue-300">
             Sign in
+          </Link>
+        </div>
+
+        {/* Demo Account Quick Access */}
+        <div className="mt-6 pt-4 border-t border-slate-800 text-center">
+          <Link href="/login" className="inline-flex items-center justify-center gap-2 text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full font-medium transition-colors">
+            <Sparkles className="w-3.5 h-3.5" /> Want to try instant demo accounts? Click here
           </Link>
         </div>
       </div>

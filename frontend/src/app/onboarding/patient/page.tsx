@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import { useAuth } from '@/components/auth/AuthProvider'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 export default function PatientOnboarding() {
   const router = useRouter()
@@ -66,7 +67,16 @@ export default function PatientOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-4 md:p-8">
+      {/* Top Header Navigation */}
+      <div className="w-full max-w-2xl mb-6 flex items-center justify-between border-b border-slate-800 pb-4">
+        <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium">
+          <ArrowLeft className="w-4 h-4" /> Back to Landing Page
+        </Link>
+        <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+          Omni-Fusion
+        </Link>
+      </div>
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl p-8">
         <h1 className="text-2xl font-bold mb-6">Patient Onboarding</h1>
         
