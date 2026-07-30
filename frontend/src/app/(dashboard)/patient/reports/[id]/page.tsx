@@ -12,23 +12,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function DetailedReportPage({ params }: { params?: any }) {
+export default function DetailedReportPage() {
   const router = useRouter();
   const routeParams = useParams();
   
-  // Safely extract ID from routeParams or React.use(params)
-  let id = (routeParams?.id as string) || "";
-  if (!id && params) {
-    try {
-      const unwrapped = typeof params.then === 'function' ? React.use(params) : params;
-      id = (unwrapped as any)?.id || "";
-    } catch (e) {
-      // ignore
-    }
-  }
-
   const [prediction, setPrediction] = useState<StoredPrediction | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const rawId = routeParams?.id;
+  const id = typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] : "";
 
   useEffect(() => {
     async function loadReportDetails() {
