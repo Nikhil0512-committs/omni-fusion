@@ -76,7 +76,11 @@ export default function DetailedReportPage() {
     "Oxygen Saturation (O2)": -0.0683,
     "Potassium": -0.0465,
     "Glucose": -0.0206,
-    "Systolic BP (SBP)": -0.0123
+    "Systolic BP (SBP)": -0.0123,
+    "Diastolic BP (DBP)": -0.0095,
+    "Heart Rate (HR)": +0.0084,
+    "Respiratory Rate (RR)": -0.0052,
+    "Serum Creatinine": -0.0031
   };
 
   const isLowRisk = riskScore < 0.15;
@@ -267,7 +271,7 @@ export default function DetailedReportPage() {
           </p>
 
           <div className="space-y-3 pt-2">
-            {Object.entries(shapData).slice(0, 5).map(([feature, val], idx) => {
+            {Object.entries(shapData).slice(0, 9).map(([feature, val], idx) => {
               const isProtective = val <= 0;
               return (
                 <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900/80 print:bg-white p-3.5 rounded-xl border border-slate-800 print:border-gray-300 gap-2">

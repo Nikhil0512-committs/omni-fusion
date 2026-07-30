@@ -292,7 +292,11 @@ class PDFService:
                 "Vital_O2": -0.0683,
                 "Vital_Potassium": -0.0465,
                 "Vital_Glucose": -0.0206,
-                "Vital_SBP": -0.0123
+                "Vital_SBP": -0.0123,
+                "Vital_DBP": -0.0095,
+                "Vital_HR": +0.0084,
+                "Vital_RR": -0.0052,
+                "Vital_Creatinine": -0.0031
             }
 
         def format_label(key: str) -> str:
@@ -307,7 +311,7 @@ class PDFService:
                     words.append(word.capitalize())
             return " ".join(words)
 
-        sorted_shap = sorted(shap_data.items(), key=lambda x: abs(x[1]), reverse=True)[:5]
+        sorted_shap = sorted(shap_data.items(), key=lambda x: abs(x[1]), reverse=True)[:9]
         max_val = max(max([abs(v) for _, v in sorted_shap]), 0.1)
 
         bar_y_start = pdf.get_y()
