@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --no-lint",
+    "build": "next build --webpack",
     "start": "next start"
   },
   "dependencies": {
@@ -15,9 +15,9 @@
     "framer-motion": "^12.0.6",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.469.0",
-    "next": "15.1.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "next": "^16.2.12",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-leaflet": "^5.0.0",
     "recharts": "^2.15.1"
   },
