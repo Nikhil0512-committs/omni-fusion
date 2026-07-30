@@ -41,6 +41,9 @@ export default function LandingPage() {
             </>
           ) : (
             <>
+              <Link href="/login" className="text-xs font-semibold px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full hover:bg-amber-500/20 transition-all">
+                ✨ Demo Accounts
+              </Link>
               <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
                 Log In
               </Link>
