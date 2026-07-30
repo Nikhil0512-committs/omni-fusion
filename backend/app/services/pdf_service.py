@@ -25,11 +25,14 @@ class PDFService:
         self._add_fonts(pdf)
         pdf.add_page()
         
-        # Font Configuration
+        # Font Configuration (Fallback safe)
         font_family = "helvetica"
-        if lang == "hi":
+        devanagari_path = os.path.join(self.fonts_dir, "NotoSansDevanagari-Regular.ttf")
+        bengali_path = os.path.join(self.fonts_dir, "NotoSansBengali-Regular.ttf")
+        
+        if lang == "hi" and os.path.exists(devanagari_path):
             font_family = "NotoSansDevanagari"
-        elif lang == "bn":
+        elif lang == "bn" and os.path.exists(bengali_path):
             font_family = "NotoSansBengali"
             
         # MODERN COLOR PALETTE
