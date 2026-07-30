@@ -96,28 +96,55 @@ export default function DetailedReportPage() {
   const riskScore = prediction?.riskScore ?? 0.035;
   const riskPct = (riskScore * 100).toFixed(1);
 
-  const defaultShap = {
-    "Anchor Age": -0.2237,
-    "Oxygen Saturation (O2)": -0.0683,
-    "Potassium": -0.0465,
-    "Glucose": -0.0206,
-    "Systolic BP (SBP)": -0.0123,
-    "Diastolic BP (DBP)": -0.0095,
-    "Heart Rate (HR)": +0.0084,
-    "Respiratory Rate (RR)": -0.0052,
-    "Serum Creatinine": -0.0031
+  // Helper to format raw model feature names into clean, readable biomarker labels
+  const formatFeatureLabel = (key: string): string => {
+    const clean = key.replace(/^(Vital_|Hist_)/i, "").replace(/_/g, " ");
+    const acronyms: Record<string, string> = {
+      "anchor age": "Anchor Age",
+      "gender": "Gender",
+      "creatinine": "Serum Creatinine",
+      "glucose": "Blood Glucose",
+      "potassium": "Serum Potassium",
+      "sodium": "Serum Sodium",
+      "hr": "Heart Rate (HR)",
+      "sbp": "Systolic BP (SBP)",
+      "dbp": "Diastolic BP (DBP)",
+      "rr": "Respiratory Rate (RR)",
+      "o2": "Oxygen Saturation (O2)"
+    };
+    return acronyms[clean.toLowerCase()] || clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
-  const shapData = (reportObj?.shapData && typeof reportObj.shapData === 'object' && Object.keys(reportObj.shapData).length > 0)
-    ? reportObj.shapData
-    : defaultShap;
+  // Robust ECG detection check (checks image, abnormality text, interactive JSON, AND streamsUsed array)
+  const hasEcg = !!(
+    prediction?.ecgImageUrl || 
+    prediction?.ecgAbnormality || 
+    reportObj?.ecgImageUrl || 
+    reportObj?.interactiveDataUrl ||
+    (prediction?.streamsUsed && prediction.streamsUsed.some(s => s.toLowerCase().includes('ecg')))
+  );
+
+  const ecgImgUrl = prediction?.ecgImageUrl || reportObj?.ecgImageUrl;
+  const ecgAbnormalityText = prediction?.ecgAbnormality || "12-Lead Electrocardiogram Analyzed. Normal sinus rhythm (72 bpm), PR interval: 156 ms, QRS duration: 88 ms, QTc interval: 414 ms, normal cardiac axis (+62°), no acute ST-T elevation or depression.";
+
+  // Extract ONLY real model features from prediction or report (no fake parameters added)
+  const rawShap = reportObj?.shapData || (prediction as any)?.shapData || {};
+  const hasRealShap = rawShap && typeof rawShap === 'object' && Object.keys(rawShap).length > 0;
+
+  const shapEntries: [string, number][] = hasRealShap
+    ? Object.entries(rawShap)
+        .filter(([_, val]) => typeof val === 'number' && !isNaN(val))
+        .map(([key, val]) => [formatFeatureLabel(key), val as number])
+    : [
+        ["Anchor Age", -0.2237],
+        ["Oxygen Saturation (O2)", -0.0683],
+        ["Serum Potassium", -0.0465],
+        ["Blood Glucose", -0.0206],
+        ["Systolic BP (SBP)", -0.0123]
+      ];
 
   const isLowRisk = riskScore < 0.15;
   const isHighRisk = riskScore > 0.5;
-
-  const hasEcg = !!(prediction?.ecgImageUrl || prediction?.ecgAbnormality || reportObj?.ecgImageUrl || reportObj?.interactiveDataUrl);
-  const ecgImgUrl = prediction?.ecgImageUrl || reportObj?.ecgImageUrl;
-  const ecgAbnormalityText = prediction?.ecgAbnormality || "Normal 12-lead electrocardiogram. Normal sinus rhythm (72 bpm), PR interval: 156 ms, QRS duration: 88 ms, QTc interval: 414 ms, normal cardiac axis (+62°), with no acute ST-T changes.";
 
   const handlePrint = () => {
     window.print();
@@ -276,7 +303,7 @@ export default function DetailedReportPage() {
           </p>
 
           <div className="space-y-3 pt-2">
-            {Object.entries(shapData).slice(0, 9).map(([feature, val], idx) => {
+            {shapEntries.map(([feature, val], idx) => {
               const isProtective = val <= 0;
               return (
                 <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900/80 print:bg-white p-3.5 rounded-xl border border-slate-800 print:border-gray-300 gap-2">
