@@ -5,8 +5,12 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Empty Turbopack config silences Turbopack‑related warnings.
-  // Most apps work fine without any custom Turbopack settings.
   turbopack: {},
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+    memoryBasedWorkersCount: true,
+  },
 };
 
 export default nextConfig;
