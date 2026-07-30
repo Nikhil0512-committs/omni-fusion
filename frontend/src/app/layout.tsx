@@ -3,6 +3,11 @@ import "./globals.css";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
+// Force all pages to render dynamically at runtime.
+// Supabase client requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
+// which are only available at runtime, not during static build generation.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Omni-Fusion Healthcare",
   description: "Multimodal AI Cardiovascular Diagnostic Platform",
