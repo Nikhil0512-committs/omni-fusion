@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { FileText, Download, Calendar, Activity, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { StoredPrediction } from '@/lib/types'
+import Link from 'next/link'
 
 export default function PatientReports() {
   const { profile } = useAuth()
@@ -156,14 +157,13 @@ export default function PatientReports() {
                   )}
 
                     <div className="mt-auto pt-5 grid gap-2">
-                        <button 
-                          onClick={() => downloadReport(pred.id, hasReport ? pred.reports[0].downloadUrl : undefined)}
-                          disabled={preparingId === pred.id}
-                          className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center disabled:opacity-60"
+                        <Link 
+                          href={`/patient/reports/${pred.id}`}
+                          className="w-full px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center"
                         >
-                          {preparingId === pred.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                          {preparingId === pred.id ? 'Preparing PDF...' : hasReport ? 'Download PDF Report' : 'Generate & Download PDF'}
-                        </button>
+                          <FileText className="w-4 h-4 mr-2" />
+                          View & Download Report
+                        </Link>
 
                       {pred.doctorNotes.length > 0 && (
                         <button 
