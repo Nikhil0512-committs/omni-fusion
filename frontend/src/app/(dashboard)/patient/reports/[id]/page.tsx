@@ -16,8 +16,10 @@ export default function DetailedReportPage() {
   const router = useRouter();
   const routeParams = useParams();
   
+  // ALL HOOKS MUST BE DECLARED AT THE VERY TOP BEFORE ANY EARLY RETURN STATEMENTS
   const [prediction, setPrediction] = useState<StoredPrediction | null>(null);
   const [loading, setLoading] = useState(true);
+  const [interactiveEcgData, setInteractiveEcgData] = useState<{ rawEcg: number[][]; gradCam: number[] } | null>(null);
 
   const rawId = routeParams?.id;
   const id = typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] : "";
@@ -58,43 +60,7 @@ export default function DetailedReportPage() {
     loadReportDetails();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white">
-        <Activity className="w-10 h-10 animate-spin text-emerald-400 mb-4" />
-        <p className="text-slate-400 font-medium">Loading Medical Intelligence Report...</p>
-      </div>
-    );
-  }
-
-  const riskScore = prediction?.riskScore ?? 0.035;
-  const riskPct = (riskScore * 100).toFixed(1);
   const reportObj = (prediction?.reports && prediction.reports.length > 0) ? prediction.reports[0] : null;
-  
-  const defaultShap = {
-    "Anchor Age": -0.2237,
-    "Oxygen Saturation (O2)": -0.0683,
-    "Potassium": -0.0465,
-    "Glucose": -0.0206,
-    "Systolic BP (SBP)": -0.0123,
-    "Diastolic BP (DBP)": -0.0095,
-    "Heart Rate (HR)": +0.0084,
-    "Respiratory Rate (RR)": -0.0052,
-    "Serum Creatinine": -0.0031
-  };
-
-  const shapData = (reportObj?.shapData && typeof reportObj.shapData === 'object' && Object.keys(reportObj.shapData).length > 0)
-    ? reportObj.shapData
-    : defaultShap;
-
-  const isLowRisk = riskScore < 0.15;
-  const isHighRisk = riskScore > 0.5;
-
-  const hasEcg = !!(prediction?.ecgImageUrl || prediction?.ecgAbnormality || reportObj?.ecgImageUrl || reportObj?.interactiveDataUrl);
-  const ecgImgUrl = prediction?.ecgImageUrl || reportObj?.ecgImageUrl;
-  const ecgAbnormalityText = prediction?.ecgAbnormality || "Normal 12-lead electrocardiogram. Normal sinus rhythm (72 bpm), PR interval: 156 ms, QRS duration: 88 ms, QTc interval: 414 ms, normal cardiac axis (+62°), with no acute ST-T changes.";
-
-  const [interactiveEcgData, setInteractiveEcgData] = useState<{ rawEcg: number[][]; gradCam: number[] } | null>(null);
 
   useEffect(() => {
     async function fetchInteractiveEcg() {
@@ -117,6 +83,41 @@ export default function DetailedReportPage() {
     }
     fetchInteractiveEcg();
   }, [reportObj?.interactiveDataUrl]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white">
+        <Activity className="w-10 h-10 animate-spin text-emerald-400 mb-4" />
+        <p className="text-slate-400 font-medium">Loading Medical Intelligence Report...</p>
+      </div>
+    );
+  }
+
+  const riskScore = prediction?.riskScore ?? 0.035;
+  const riskPct = (riskScore * 100).toFixed(1);
+
+  const defaultShap = {
+    "Anchor Age": -0.2237,
+    "Oxygen Saturation (O2)": -0.0683,
+    "Potassium": -0.0465,
+    "Glucose": -0.0206,
+    "Systolic BP (SBP)": -0.0123,
+    "Diastolic BP (DBP)": -0.0095,
+    "Heart Rate (HR)": +0.0084,
+    "Respiratory Rate (RR)": -0.0052,
+    "Serum Creatinine": -0.0031
+  };
+
+  const shapData = (reportObj?.shapData && typeof reportObj.shapData === 'object' && Object.keys(reportObj.shapData).length > 0)
+    ? reportObj.shapData
+    : defaultShap;
+
+  const isLowRisk = riskScore < 0.15;
+  const isHighRisk = riskScore > 0.5;
+
+  const hasEcg = !!(prediction?.ecgImageUrl || prediction?.ecgAbnormality || reportObj?.ecgImageUrl || reportObj?.interactiveDataUrl);
+  const ecgImgUrl = prediction?.ecgImageUrl || reportObj?.ecgImageUrl;
+  const ecgAbnormalityText = prediction?.ecgAbnormality || "Normal 12-lead electrocardiogram. Normal sinus rhythm (72 bpm), PR interval: 156 ms, QRS duration: 88 ms, QTc interval: 414 ms, normal cardiac axis (+62°), with no acute ST-T changes.";
 
   const handlePrint = () => {
     window.print();
