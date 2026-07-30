@@ -44,13 +44,27 @@ class InferenceService:
 
     def _initialize(self):
         print("Initializing InferenceService singleton...", flush=True)
-        # Load configs
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        models_dir = os.path.join(base_dir, 'models')
-        
-        # If running in docker, models is mounted at /models
-        if not os.path.exists(models_dir) and os.path.exists('/models'):
-            models_dir = '/models'
+        # Resolve models_dir dynamically across local, Docker, and Render environments
+        candidate_paths = [
+            os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models')),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'models')),
+            os.path.abspath(os.path.join(os.getcwd(), 'models')),
+            os.path.abspath(os.path.join(os.getcwd(), 'backend', 'models')),
+            '/app/models',
+            '/app/backend/models',
+            '/models',
+        ]
+        models_dir = None
+        for path in candidate_paths:
+            if os.path.exists(os.path.join(path, 'checkpoints', 'ecg_branch_config.json')):
+                models_dir = path
+                break
+
+        if not models_dir:
+            models_dir = candidate_paths[0]
+            print(f"Warning: Could not find ecg_branch_config.json in candidates. Defaulting models_dir to {models_dir}", flush=True)
+        else:
+            print(f"Resolved models_dir to: {models_dir}", flush=True)
 
         with open(os.path.join(models_dir, 'checkpoints', 'ecg_branch_config.json'), 'r') as f:
             cfg_ecg = json.load(f)
@@ -76,8 +90,13 @@ class InferenceService:
         self.model = OmniFusionNet(model_ecg, model_vitals, model_hist, ecg_emb_dim, vitals_emb_dim, hist_emb_dim).to(device)
         
         model_path = settings.model_path
-        if not os.path.exists(model_path) and model_path.startswith('../models'):
-            model_path = model_path.replace('../models', models_dir)
+        if not os.path.exists(model_path):
+            if model_path.startswith('../models'):
+                model_path = model_path.replace('../models', models_dir)
+            if not os.path.exists(model_path):
+                alt_path = os.path.join(models_dir, 'exported', 'omni_fusion_final.pt')
+                if os.path.exists(alt_path):
+                    model_path = alt_path
             
         self.model.load_state_dict(torch.load(model_path, weights_only=True, map_location=device))
         self.model.eval()
