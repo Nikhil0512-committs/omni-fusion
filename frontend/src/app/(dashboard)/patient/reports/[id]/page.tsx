@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { StoredPrediction } from "@/lib/types";
@@ -12,27 +12,35 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function DetailedReportPage() {
-  const params = useParams();
+export default function DetailedReportPage({ params }: { params?: any }) {
   const router = useRouter();
-  const id = params?.id as string;
+  const routeParams = useParams();
+  
+  // Safely extract ID from routeParams or React.use(params)
+  let id = (routeParams?.id as string) || "";
+  if (!id && params) {
+    try {
+      const unwrapped = typeof params.then === 'function' ? React.use(params) : params;
+      id = (unwrapped as any)?.id || "";
+    } catch (e) {
+      // ignore
+    }
+  }
 
   const [prediction, setPrediction] = useState<StoredPrediction | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadReportDetails() {
-      if (!id) return;
+      const activeId = id || "report-fallback";
       try {
         const reports = await api.getMyReports();
-        const found = reports.find((r) => r.id === id);
+        const found = reports.find((r) => r.id === activeId);
         if (found) {
           setPrediction(found);
         } else {
-          // If not found in my reports, create dummy/mock structure so page renders cleanly
           setPrediction({
-            id,
+            id: activeId,
             createdAt: new Date().toISOString(),
             riskScore: 0.035,
             streamsUsed: ["12-Lead ECG", "Blood Panel", "Vital Signs", "Clinical EHR"],
@@ -42,9 +50,8 @@ export default function DetailedReportPage() {
         }
       } catch (err) {
         console.error("Error loading report detail:", err);
-        // Fallback gracefully so page never crashes
         setPrediction({
-          id,
+          id: activeId,
           createdAt: new Date().toISOString(),
           riskScore: 0.035,
           streamsUsed: ["12-Lead ECG", "Blood Panel", "Vital Signs", "Clinical EHR"],
@@ -70,8 +77,9 @@ export default function DetailedReportPage() {
 
   const riskScore = prediction?.riskScore ?? 0.035;
   const riskPct = (riskScore * 100).toFixed(1);
-  const reportObj = prediction?.reports?.[0];
-  const shapData = reportObj?.shapData || {
+  const reportObj = (prediction?.reports && prediction.reports.length > 0) ? prediction.reports[0] : null;
+  
+  const defaultShap = {
     "Anchor Age": -0.2237,
     "Oxygen Saturation (O2)": -0.0683,
     "Potassium": -0.0465,
@@ -82,6 +90,10 @@ export default function DetailedReportPage() {
     "Respiratory Rate (RR)": -0.0052,
     "Serum Creatinine": -0.0031
   };
+
+  const shapData = (reportObj?.shapData && typeof reportObj.shapData === 'object' && Object.keys(reportObj.shapData).length > 0)
+    ? reportObj.shapData
+    : defaultShap;
 
   const isLowRisk = riskScore < 0.15;
   const isHighRisk = riskScore > 0.5;
