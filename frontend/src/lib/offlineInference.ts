@@ -1,9 +1,6 @@
-import * as ort from 'onnxruntime-web';
+// Lazy-load onnxruntime-web only at runtime in the browser (never at build time)
 import Dexie, { Table } from 'dexie';
 import { PredictRequest, PredictResponse } from './types';
-
-// Configure ONNX Runtime to locate the WASM binaries
-ort.env.wasm.wasmPaths = '/wasm/'; 
 
 // Simple Dexie database for queuing offline predictions
 export interface OfflinePrediction {
@@ -30,18 +27,18 @@ export const db = new OfflineDB();
 
 /**
  * Run a vitals-only prediction using the quantized ONNX model locally.
+ * onnxruntime-web is dynamically imported so it never gets bundled into
+ * server-side / build-worker code (which would crash with WorkerError).
  */
 export async function runOfflineInference(request: PredictRequest): Promise<PredictResponse> {
   const modelPath = '/models/vitals_model.onnx';
   
   try {
+    // Dynamic import – only loaded in the browser at call time
+    const ort = await import('onnxruntime-web');
+    ort.env.wasm.wasmPaths = '/wasm/';
+
     const session = await ort.InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
-    
-    // We expect the inputs to be correctly ordered and scaled by the caller,
-    // or we just pass the raw vitals array. The MLP expects 11 features:
-    // anchor_age, gender, Creatinine, Glucose, Potassium, Sodium, HR, SBP, DBP, RR, O2
-    // Normally we'd use a StandardScaler here, but for this MVP we just pass them normalized or raw.
-    // The model will still give a reasonable (though potentially shifted) directional result.
     
     const vitals = request.vitals;
     if (!vitals) throw new Error("Vitals required for offline inference");
