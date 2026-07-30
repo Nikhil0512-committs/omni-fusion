@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./models:/models:ro
+    env_file:
+      - ./backend/.env
+    # To run this service, a developer must create backend/.env by copying backend/.env.example 
+    # and filling in the Supabase URL and Service Role Key.
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    env_file:
+      - ./frontend/.env.local
+    # To run this service, a developer must create frontend/.env.local by copying frontend/.env.local.example
+    environment:
+      - WATCHPACK_POLLING=true
+    command: npm run dev
