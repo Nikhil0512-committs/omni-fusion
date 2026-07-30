@@ -182,26 +182,41 @@ class InferenceService:
             logits = self.model(pat_ecg, v_t, h_t)
             prob = torch.softmax(logits, dim=1).cpu().numpy()[0, 1]
 
-        # Tabular SHAP
+        # Tabular SHAP (chunked to prevent memory spikes on 512MB RAM containers)
         def predict_fn(tabular_array):
-            v = tabular_array[:, :len(self.scaler_feature_order)]
-            h = tabular_array[:, len(self.scaler_feature_order):]
-            v_tensor = torch.tensor(v, dtype=torch.float32).to(device)
-            h_tensor = torch.tensor(h, dtype=torch.float32).unsqueeze(1).to(device)
-            e_tensor = pat_ecg.repeat(tabular_array.shape[0], 1, 1)
-            with torch.no_grad():
-                l = self.model(e_tensor, v_tensor, h_tensor)
-                p = torch.softmax(l, dim=1).cpu().numpy()[:, 1]
-            return p
+            batch_size = 16
+            n_samples = tabular_array.shape[0]
+            probs = []
+            for i in range(0, n_samples, batch_size):
+                sub_arr = tabular_array[i:i+batch_size]
+                v = sub_arr[:, :len(self.scaler_feature_order)]
+                h = sub_arr[:, len(self.scaler_feature_order):]
+                v_tensor = torch.tensor(v, dtype=torch.float32).to(device)
+                h_tensor = torch.tensor(h, dtype=torch.float32).unsqueeze(1).to(device)
+                e_tensor = pat_ecg.repeat(sub_arr.shape[0], 1, 1)
+                with torch.no_grad():
+                    l = self.model(e_tensor, v_tensor, h_tensor)
+                    p = torch.softmax(l, dim=1).cpu().numpy()[:, 1]
+                    probs.append(p)
+            return np.concatenate(probs, axis=0)
 
-        # We construct a combined background of shape (N, 22) from the SHAP background (which is shape (N, 11))
-        # Here we just pad historical with zeros, as historical might not be available, or copy the vitals background.
-        # But `self.bg_summary` now is shape (50, 11) or similar.
-        # We need a shape of (50, 22) for the SHAP explainer
-        combined_bg = np.concatenate([self.bg_summary, np.zeros_like(self.bg_summary)], axis=1)
-        explainer = shap.KernelExplainer(predict_fn, combined_bg)
-        shap_vals = explainer.shap_values(pat_tabular)
-        shap_dict = {self.feature_names[i]: float(shap_vals[0][i]) for i in range(len(self.feature_names))}
+        # Use a lightweight background summary (5 samples) and nsamples=25 to stay within memory limits
+        bg_sub = self.bg_summary[:5] if len(self.bg_summary) > 5 else self.bg_summary
+        combined_bg = np.concatenate([bg_sub, np.zeros_like(bg_sub)], axis=1)
+        explainer = shap.KernelExplainer(predict_fn, combined_bg, silent=True)
+        shap_vals = explainer.shap_values(pat_tabular, nsamples=25, silent=True)
+        
+        # Handle shap_vals format compatibility
+        if isinstance(shap_vals, list):
+            sv = shap_vals[0]
+        else:
+            sv = shap_vals
+        if sv.ndim > 1:
+            sv = sv[0]
+            
+        shap_dict = {self.feature_names[i]: float(sv[i]) for i in range(len(self.feature_names))}
+        import gc
+        gc.collect()
 
         # ECG Grad-CAM
         attr = self.layer_gc.attribute(inputs=pat_ecg, additional_forward_args=(v_t, h_t), target=1)
