@@ -114,7 +114,7 @@ export default function PatientDashboard() {
                   <YAxis stroke="#64748b" fontSize={12} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', color: '#fff' }}
-                    labelFormatter={(label: string) => `Date: ${label}`}
+                    labelFormatter={(label: any) => `Date: ${label}`}
                   />
                   <Line type="monotone" dataKey="risk" name="Risk Score" unit="%" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} />
                 </LineChart>
