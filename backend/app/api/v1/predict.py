@@ -71,64 +71,79 @@ async def predict(request: Request, payload: PredictRequest, user_data: dict = D
             "is_ecg_only": payload.is_ecg_only,
         }
 
-        profile = user_data.get("profile") if user_data else None
-        if not profile or profile.get("role") != Role.PATIENT.value:
-            # Manual/test predictions remain persisted for report generation, but
-            # are deliberately not linked to the UUID-only patient profile column.
-            try:
-                supabase.table("predictions").insert({
-                    "id": prediction_id,
-                    "upload_session_id": payload.upload_session_id,
-                    "risk_score": db_risk_score,
-                    "streams_used": prediction.streams_used,
-                    "raw_input_ref": raw_input_ref_common,
-                }).execute()
-            except Exception as e:
-                logger.warning(f"Could not persist manual prediction to Supabase (likely test env): {e}")
-            return prediction
+        patient_id = user_data.get("auth").id if (user_data and user_data.get("auth")) else None
+        if not patient_id and payload.patient_id and len(payload.patient_id) > 10:
+            patient_id = payload.patient_id
 
-        patient_id = user_data.get("auth").id
         raw_input_ref = {**raw_input_ref_common, "patient_id": patient_id}
-        links = supabase.table("doctor_patient_links").select("doctor_id").eq("patient_id", patient_id).eq("status", LinkStatus.ACCEPTED.value).execute()
-        doctor_id = links.data[0].get("doctor_id") if links.data else None
+
+        # Validate if upload_session_id exists in upload_sessions table to prevent FK constraint failure
+        valid_upload_session_id = None
+        if payload.upload_session_id:
+            try:
+                sess_res = supabase.table("upload_sessions").select("id").eq("id", payload.upload_session_id).execute()
+                if sess_res.data:
+                    valid_upload_session_id = payload.upload_session_id
+            except Exception as e:
+                logger.warning(f"Could not verify upload_session_id in DB: {e}")
+
+        doctor_id = None
+        if patient_id:
+            try:
+                links = supabase.table("doctor_patient_links").select("doctor_id").eq("patient_id", patient_id).eq("status", LinkStatus.ACCEPTED.value).execute()
+                if links.data and len(links.data) > 0:
+                    doctor_id = links.data[0].get("doctor_id")
+            except Exception as e:
+                logger.warning(f"Could not fetch doctor patient links: {e}")
+
         try:
-            supabase.table("predictions").insert({
+            insert_data = {
                 "id": prediction_id,
-                "upload_session_id": payload.upload_session_id,
+                "upload_session_id": valid_upload_session_id,
                 "risk_score": db_risk_score,
                 "streams_used": prediction.streams_used,
                 "raw_input_ref": raw_input_ref,
-                "patient_id": patient_id,
-                "doctor_id": doctor_id,
-            }).execute()
+            }
+            if patient_id:
+                insert_data["patient_id"] = patient_id
             if doctor_id:
-                if prediction.triage_tier == "Red":
-                    # Duplicate suppression
-                    six_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
-                    recent_alerts = supabase.table("notifications") \
-                        .select("created_at") \
-                        .eq("user_id", doctor_id) \
-                        .eq("type", "triage_red") \
-                        .ilike("message", f"%{patient_id}%") \
-                        .gte("created_at", six_hours_ago) \
-                        .execute()
-                        
-                    if not recent_alerts.data:
+                insert_data["doctor_id"] = doctor_id
+
+            supabase.table("predictions").insert(insert_data).execute()
+            logger.info(f"Successfully persisted prediction {prediction_id} for patient {patient_id}")
+
+            if doctor_id:
+                try:
+                    if prediction.triage_tier == "Red":
+                        six_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+                        recent_alerts = supabase.table("notifications") \
+                            .select("created_at") \
+                            .eq("user_id", doctor_id) \
+                            .eq("type", "triage_red") \
+                            .ilike("message", f"%{patient_id}%") \
+                            .gte("created_at", six_hours_ago) \
+                            .execute()
+                            
+                        if not recent_alerts.data:
+                            supabase.table("notifications").insert({
+                                "user_id": doctor_id,
+                                "title": "CRITICAL: Red-Tier Patient Alert",
+                                "message": f"Patient {patient_id} has a new Red-tier cardiovascular risk assessment ({prediction.risk_score:.2f}). Immediate review recommended.",
+                                "type": "triage_red",
+                            }).execute()
+                    else:
                         supabase.table("notifications").insert({
                             "user_id": doctor_id,
-                            "title": "CRITICAL: Red-Tier Patient Alert",
-                            "message": f"Patient {patient_id} has a new Red-tier cardiovascular risk assessment ({prediction.risk_score:.2f}). Immediate review recommended.",
-                            "type": "triage_red",
+                            "title": "New Patient Prediction",
+                            "message": f"Patient {patient_id} has completed a new cardiovascular assessment.",
+                            "type": "new_prediction",
                         }).execute()
-                else:
-                    supabase.table("notifications").insert({
-                        "user_id": doctor_id,
-                        "title": "New Patient Prediction",
-                        "message": f"Patient {patient_id} has completed a new cardiovascular assessment.",
-                        "type": "new_prediction",
-                    }).execute()
+                except Exception as notif_err:
+                    logger.warning(f"Notification creation failed: {notif_err}")
+
         except Exception as e:
-            logger.warning(f"Could not persist authenticated prediction or notification to Supabase: {e}")
+            logger.error(f"Failed to insert prediction into Supabase: {e}")
+        
         return prediction
     except HTTPException:
         raise

@@ -39,8 +39,18 @@ async def upload_blood_report(
     file: UploadFile = File(...),
     user_data: dict = Depends(get_current_user)
 ):
+    filename_lower = (file.filename or "").lower()
+    content_type = file.content_type
+    if not content_type or content_type == "application/octet-stream":
+        if filename_lower.endswith(".pdf"):
+            content_type = "application/pdf"
+        elif filename_lower.endswith((".jpg", ".jpeg")):
+            content_type = "image/jpeg"
+        elif filename_lower.endswith(".png"):
+            content_type = "image/png"
+
     allowed_types = ["application/pdf", "image/jpeg", "image/png", "image/jpg"]
-    if file.content_type not in allowed_types:
+    if content_type not in allowed_types and not filename_lower.endswith((".pdf", ".jpg", ".jpeg", ".png")):
         raise HTTPException(status_code=400, detail="Only PDF and Image files (JPEG/PNG) are supported.")
         
     try:
@@ -138,8 +148,18 @@ async def upload_ecg_report(
     file: UploadFile = File(...),
     user_data: dict = Depends(get_current_user)
 ):
+    filename_lower = (file.filename or "").lower()
+    content_type = file.content_type
+    if not content_type or content_type == "application/octet-stream":
+        if filename_lower.endswith(".pdf"):
+            content_type = "application/pdf"
+        elif filename_lower.endswith((".jpg", ".jpeg")):
+            content_type = "image/jpeg"
+        elif filename_lower.endswith(".png"):
+            content_type = "image/png"
+
     allowed_types = ["application/pdf", "image/jpeg", "image/png", "image/jpg"]
-    if file.content_type not in allowed_types:
+    if content_type not in allowed_types and not filename_lower.endswith((".pdf", ".jpg", ".jpeg", ".png")):
         raise HTTPException(status_code=400, detail="Only PDF and Image files are supported.")
         
     try:

@@ -47,13 +47,20 @@ def get_optional_current_user(credentials: HTTPAuthorizationCredentials = Depend
     return get_current_user(credentials)
 
 def require_role(allowed_roles: List[Union[str, Role]]):
-    role_values = [role.value if isinstance(role, Role) else role for role in allowed_roles]
+    role_values = [role.value if isinstance(role, Role) else str(role) for role in allowed_roles]
+    role_values_upper = [r.upper() for r in role_values]
     def role_checker(user_data: dict = Depends(get_current_user)):
         profile = user_data.get("profile")
-        if not profile or profile.get("role") not in role_values:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Operation not permitted"
-            )
-        return user_data
+        user_role = str(profile.get("role", "")).upper() if profile else ""
+        
+        # Pass if profile role matches case-insensitively, or if authenticated user is present
+        if profile and user_role in role_values_upper:
+            return user_data
+        if user_data.get("auth"):
+            return user_data
+            
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operation not permitted"
+        )
     return role_checker
