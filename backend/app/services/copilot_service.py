@@ -90,38 +90,38 @@ class CopilotService:
                 }]
             }
 
-        import os
-        current_api_key = settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
-        if not current_api_key:
-            raise Exception("GEMINI_API_KEY environment variable is not configured on the server.")
+            import os
+            current_api_key = settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
+            if not current_api_key:
+                raise Exception("GEMINI_API_KEY environment variable is not configured on the server.")
 
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-flash-latest", "gemini-1.5-pro"]
-        response = None
-        last_err = None
+            models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-flash-latest", "gemini-1.5-pro"]
+            response = None
+            last_err = None
 
-        for model_name in models_to_try:
-            api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={current_api_key}"
-            try:
-                with httpx.Client(timeout=60.0) as client:
-                    resp = client.post(
-                        api_url,
-                        json=payload,
-                        headers={"Content-Type": "application/json"}
-                    )
-                if resp.status_code == 200:
-                    response = resp
-                    break
-                else:
-                    last_err = resp
-            except Exception as req_err:
-                logger.warning(f"Copilot model {model_name} failed: {req_err}")
+            for model_name in models_to_try:
+                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={current_api_key}"
+                try:
+                    with httpx.Client(timeout=60.0) as client:
+                        resp = client.post(
+                            api_url,
+                            json=payload,
+                            headers={"Content-Type": "application/json"}
+                        )
+                    if resp.status_code == 200:
+                        response = resp
+                        break
+                    else:
+                        last_err = resp
+                except Exception as req_err:
+                    logger.warning(f"Copilot model {model_name} failed: {req_err}")
 
-        if not response:
-            if last_err is not None:
-                last_err.raise_for_status()
-            raise Exception("Failed to query Gemini API models for clinical summary.")
+            if not response:
+                if last_err is not None:
+                    last_err.raise_for_status()
+                raise Exception("Failed to query Gemini API models for clinical summary.")
 
-        response_data = response.json()
+            response_data = response.json()
             
             try:
                 text = response_data["candidates"][0]["content"]["parts"][0]["text"]
