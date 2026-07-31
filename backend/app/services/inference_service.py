@@ -285,28 +285,34 @@ class InferenceService:
 
         # 2. Evaluate extracted Blood & Vital Biomarkers
         if req.vitals:
-            v = req.vitals
-            if v.creatinine and v.creatinine > 2.0:
-                clinical_risk_floor = max(clinical_risk_floor, 0.65 if v.creatinine < 3.5 else 0.85)
+            c_val = get_vital_val(req.vitals, "Creatinine")
+            p_val = get_vital_val(req.vitals, "Potassium")
+            g_val = get_vital_val(req.vitals, "Glucose")
+            hr_val = get_vital_val(req.vitals, "HR")
+            sbp_val = get_vital_val(req.vitals, "SBP")
+            o2_val = get_vital_val(req.vitals, "O2")
+
+            if c_val > 2.0:
+                clinical_risk_floor = max(clinical_risk_floor, 0.65 if c_val < 3.5 else 0.85)
                 shap_dict["Vital_Creatinine"] = max(shap_dict.get("Vital_Creatinine", 0.0), 0.15)
 
-            if v.potassium and (v.potassium > 5.5 or v.potassium < 3.0):
+            if p_val > 5.5 or (p_val > 0.1 and p_val < 3.0):
                 clinical_risk_floor = max(clinical_risk_floor, 0.70)
                 shap_dict["Vital_Potassium"] = max(shap_dict.get("Vital_Potassium", 0.0), 0.18)
 
-            if v.glucose and (v.glucose > 250.0 or v.glucose < 50.0):
+            if g_val > 250.0 or (g_val > 0.1 and g_val < 50.0):
                 clinical_risk_floor = max(clinical_risk_floor, 0.55)
                 shap_dict["Vital_Glucose"] = max(shap_dict.get("Vital_Glucose", 0.0), 0.12)
 
-            if v.hr and (v.hr > 115.0 or v.hr < 45.0):
+            if hr_val > 115.0 or (hr_val > 0.1 and hr_val < 45.0):
                 clinical_risk_floor = max(clinical_risk_floor, 0.50)
                 shap_dict["Vital_HR"] = max(shap_dict.get("Vital_HR", 0.0), 0.10)
 
-            if v.sbp and (v.sbp > 180.0 or v.sbp < 85.0):
+            if sbp_val > 180.0 or (sbp_val > 0.1 and sbp_val < 85.0):
                 clinical_risk_floor = max(clinical_risk_floor, 0.60)
                 shap_dict["Vital_SBP"] = max(shap_dict.get("Vital_SBP", 0.0), 0.14)
 
-            if v.o2 and v.o2 < 90.0:
+            if o2_val > 0.1 and o2_val < 90.0:
                 clinical_risk_floor = max(clinical_risk_floor, 0.75)
                 shap_dict["Vital_O2"] = max(shap_dict.get("Vital_O2", 0.0), 0.20)
 
