@@ -131,7 +131,7 @@ async def upload_blood_report(
         raise
     except Exception as e:
         logger.error(f"Error processing blood report upload: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal Server Error during blood report processing.")
+        raise HTTPException(status_code=500, detail=f"Blood Upload Error: {str(e)}")
 
 @router.post("/upload-ecg-report", response_model=UploadHistoricalResponse)
 @limiter.limit("5/minute")
@@ -197,4 +197,4 @@ async def upload_ecg_report(
         raise
     except Exception as e:
         logger.error(f"Error processing ECG report upload: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal Server Error during ECG report processing.")
+        raise HTTPException(status_code=500, detail=f"ECG Upload Error: {str(e)}")
