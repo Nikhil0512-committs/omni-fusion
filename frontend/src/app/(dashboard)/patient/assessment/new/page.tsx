@@ -286,75 +286,40 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Right Viewport */}
+            {/* Right Viewport: User Uploaded ECG Report Document / Image */}
             <div className="flex flex-col space-y-4">
-              {(ecgSessionId || ecgPreviewUrl) && (
-                ecgPreviewUrl ? (
-                  <div className="w-full bg-slate-900 rounded-xl p-5 border border-slate-800 flex flex-col gap-4 shadow-xl">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setActiveEcgTab('uploaded')}
-                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                            activeEcgTab === 'uploaded' 
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                              : 'text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          Uploaded ECG Image
-                        </button>
-                        {prediction.rawEcg && (
-                          <button 
-                            onClick={() => setActiveEcgTab('interactive')}
-                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                              activeEcgTab === 'interactive' 
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                : 'text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            Interactive Waveforms
-                          </button>
-                        )}
-                      </div>
-                      <a 
-                        href={ecgPreviewUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" /> View Original
-                      </a>
-                    </div>
-
-                    {activeEcgTab === 'uploaded' ? (
-                      <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center">
-                        {ecgPreviewUrl.toLowerCase().endsWith('.pdf') || ecgPreviewUrl.startsWith('blob:') ? (
-                          <iframe 
-                            src={ecgPreviewUrl} 
-                            title="User Uploaded ECG Document" 
-                            className="w-full h-full border-none rounded-lg"
-                          />
-                        ) : (
-                          <img 
-                            src={ecgPreviewUrl} 
-                            alt="User Uploaded ECG" 
-                            className="w-full h-full object-contain" 
-                          />
-                        )}
-                      </div>
-                    ) : prediction.rawEcg && prediction.ecgGradcamData ? (
-                      <InteractiveEcgViewer 
-                        rawEcg={prediction.rawEcg}
-                        gradCam={prediction.ecgGradcamData}
-                      />
-                    ) : null}
+              {(ecgSessionId || ecgPreviewUrl) && ecgPreviewUrl && (
+                <div className="w-full bg-slate-900 rounded-xl p-5 border border-slate-800 flex flex-col gap-4 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
+                      Uploaded ECG Report Document
+                    </span>
+                    <a 
+                      href={ecgPreviewUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" /> View Original
+                    </a>
                   </div>
-                ) : (prediction.rawEcg && prediction.ecgGradcamData ? (
-                  <InteractiveEcgViewer 
-                    rawEcg={prediction.rawEcg}
-                    gradCam={prediction.ecgGradcamData}
-                  />
-                ) : null)
+
+                  <div className="relative w-full h-[360px] rounded-lg overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center">
+                    {ecgPreviewUrl.toLowerCase().endsWith('.pdf') || ecgPreviewUrl.startsWith('blob:') ? (
+                      <iframe 
+                        src={ecgPreviewUrl} 
+                        title="User Uploaded ECG Document" 
+                        className="w-full h-full border-none rounded-lg"
+                      />
+                    ) : (
+                      <img 
+                        src={ecgPreviewUrl} 
+                        alt="User Uploaded ECG" 
+                        className="w-full h-full object-contain" 
+                      />
+                    )}
+                  </div>
+                </div>
               )}
               
               <div className="w-full bg-slate-900 rounded-lg p-4 border border-slate-800">
