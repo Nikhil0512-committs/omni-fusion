@@ -8,7 +8,7 @@ import { UploadHistoricalResponse } from '@/lib/types';
 
 interface FileUploadZoneProps {
   mode?: 'blood' | 'ecg';
-  onSessionCreated: (response: UploadHistoricalResponse) => void;
+  onSessionCreated: (response: UploadHistoricalResponse, previewUrl?: string) => void;
 }
 
 export default function FileUploadZone({ mode = 'blood', onSessionCreated }: FileUploadZoneProps) {
@@ -23,6 +23,11 @@ export default function FileUploadZone({ mode = 'blood', onSessionCreated }: Fil
     setStatus('uploading');
     setErrorMessage('');
     
+    let previewUrl: string | undefined;
+    if (selectedFile.type.startsWith('image/') || selectedFile.type === 'application/pdf') {
+      previewUrl = URL.createObjectURL(selectedFile);
+    }
+    
     try {
       let res;
       if (mode === 'ecg') {
@@ -35,7 +40,7 @@ export default function FileUploadZone({ mode = 'blood', onSessionCreated }: Fil
         }
       }
       setStatus('success');
-      onSessionCreated(res);
+      onSessionCreated(res, previewUrl);
     } catch (err: unknown) {
       setStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Failed to upload file');

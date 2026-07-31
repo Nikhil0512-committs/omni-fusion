@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [ecgAbnormality, setEcgAbnormality] = useState<string | null>(null);
   const [bloodImagePath, setBloodImagePath] = useState<string | null>(null);
   const [ecgImagePath, setEcgImagePath] = useState<string | null>(null);
+  const [ecgPreviewUrl, setEcgPreviewUrl] = useState<string | null>(null);
+  const [activeEcgTab, setActiveEcgTab] = useState<'uploaded' | 'interactive'>('uploaded');
   
   const [historicalData, setHistoricalData] = useState<VitalsInput | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
@@ -75,19 +77,19 @@ export default function Dashboard() {
         );
       }
 
-      // Extract vitals from historical if available, otherwise dummy
+      // Extract vitals from historical if available, otherwise medical baseline normal
       const dummyVitals = {
-        anchorAge: historicalData?.anchorAge ?? 65.0,
+        anchorAge: historicalData?.anchorAge ?? 45.0,
         gender: historicalData?.gender ?? 1,
         creatinine: historicalData?.creatinine ?? 1.1,
-        glucose: historicalData?.glucose ?? 100.0,
-        potassium: historicalData?.potassium ?? 4.0,
-        sodium: historicalData?.sodium ?? 139.0,
-        hr: historicalData?.hr ?? 82.0,
-        sbp: historicalData?.sbp ?? 135.0,
+        glucose: historicalData?.glucose ?? 95.0,
+        potassium: historicalData?.potassium ?? 4.2,
+        sodium: historicalData?.sodium ?? 140.0,
+        hr: historicalData?.hr ?? 72.0,
+        sbp: historicalData?.sbp ?? 120.0,
         dbp: historicalData?.dbp ?? 80.0,
-        rr: historicalData?.rr ?? 16.0,
-        o2: historicalData?.o2 ?? 98.0
+        rr: historicalData?.rr ?? 14.0,
+        o2: historicalData?.o2 ?? 99.0
       };
 
       const isEcgOnly = sessionId === null && ecgSessionId !== null;
@@ -184,8 +186,9 @@ export default function Dashboard() {
             <div className="border-t border-slate-800 pt-6">
               <h2 className="text-lg font-semibold text-slate-200 mb-2">2. ECG Report (Optional)</h2>
               <p className="text-slate-500 text-sm mb-4">Upload a 12-lead ECG printout for Vision AI extraction.</p>
-              <FileUploadZone mode="ecg" onSessionCreated={(res) => {
+              <FileUploadZone mode="ecg" onSessionCreated={(res, previewUrl) => {
                 setEcgSessionId(res.sessionId);
+                if (previewUrl) setEcgPreviewUrl(previewUrl);
                 if (res.aggregatedData) {
                   if (res.aggregatedData.ecgAbnormality) setEcgAbnormality(res.aggregatedData.ecgAbnormality);
                   if (res.aggregatedData.uploadedImagePath) setEcgImagePath(res.aggregatedData.uploadedImagePath);
@@ -268,7 +271,7 @@ export default function Dashboard() {
               {prediction.ecgAbnormality && (
                 <div className="w-full bg-red-900/20 border border-red-800 rounded-lg p-4 mb-4">
                   <h3 className="text-red-400 font-semibold mb-1 text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" /> ECG Abnormality Detected
+                    <AlertCircle className="w-4 h-4" /> ECG Findings Extracted
                   </h3>
                   <p className="text-red-200/80 text-sm">
                     {prediction.ecgAbnormality}
@@ -287,7 +290,59 @@ export default function Dashboard() {
 
             {/* Right Viewport */}
             <div className="flex flex-col space-y-4">
-              {prediction.rawEcg && prediction.ecgGradcamData ? (
+              {ecgPreviewUrl ? (
+                <div className="w-full bg-slate-900 rounded-xl p-5 border border-slate-800 flex flex-col gap-4 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setActiveEcgTab('uploaded')}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                          activeEcgTab === 'uploaded' 
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Uploaded ECG Image
+                      </button>
+                      {prediction.rawEcg && (
+                        <button 
+                          onClick={() => setActiveEcgTab('interactive')}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                            activeEcgTab === 'interactive' 
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          Interactive Waveforms
+                        </button>
+                      )}
+                    </div>
+                    <a 
+                      href={ecgPreviewUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" /> View Original
+                    </a>
+                  </div>
+
+                  {activeEcgTab === 'uploaded' ? (
+                    <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center">
+                      <img 
+                        src={ecgPreviewUrl} 
+                        alt="User Uploaded ECG" 
+                        className="w-full h-full object-contain" 
+                      />
+                    </div>
+                  ) : prediction.rawEcg && prediction.ecgGradcamData ? (
+                    <InteractiveEcgViewer 
+                      rawEcg={prediction.rawEcg}
+                      gradCam={prediction.ecgGradcamData}
+                    />
+                  ) : null}
+                </div>
+              ) : prediction.rawEcg && prediction.ecgGradcamData ? (
                 <InteractiveEcgViewer 
                   rawEcg={prediction.rawEcg}
                   gradCam={prediction.ecgGradcamData}
