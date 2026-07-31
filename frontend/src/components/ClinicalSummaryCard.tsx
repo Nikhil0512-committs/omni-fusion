@@ -23,7 +23,8 @@ export const ClinicalSummaryCard: React.FC<ClinicalSummaryCardProps> = ({ predic
           headers['Authorization'] = `Bearer ${parsed.currentSession.access_token}`;
         }
         
-        const response = await fetch('http://localhost:8000/api/v1/copilot/summarize', {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+        const response = await fetch(`${baseUrl}/api/v1/copilot/summarize`, {
           method: 'POST',
           headers,
           body: JSON.stringify({ prediction_id: predictionId }),
