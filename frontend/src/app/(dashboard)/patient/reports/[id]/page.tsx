@@ -131,16 +131,27 @@ export default function DetailedReportPage() {
   const rawShap = reportObj?.shapData || (prediction as any)?.shapData || {};
   const hasRealShap = rawShap && typeof rawShap === 'object' && Object.keys(rawShap).length > 0;
 
+  // Features that come from blood reports (lab biomarkers)
+  const BLOOD_REPORT_FEATURES = new Set([
+    'serum creatinine', 'blood glucose', 'serum potassium', 'serum sodium',
+    'heart rate (hr)', 'anchor age', 'gender',
+    // Also match Vital_ and Hist_ prefixed versions
+    'creatinine', 'glucose', 'potassium', 'sodium', 'hr'
+  ]);
+
   const shapEntries: [string, number][] = hasRealShap
     ? Object.entries(rawShap)
-        .filter(([_, val]) => typeof val === 'number' && !isNaN(val))
-        .map(([key, val]) => [formatFeatureLabel(key), val as number])
+        .filter(([key, val]) => typeof val === 'number' && !isNaN(val))
+        .filter(([key]) => !key.startsWith('Hist_'))  // Skip historical duplicates
+        .map(([key, val]) => [formatFeatureLabel(key), val as number] as [string, number])
+        .filter(([label]) => BLOOD_REPORT_FEATURES.has(label.toLowerCase()))
+        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
     : [
-        ["Anchor Age", -0.2237],
-        ["Oxygen Saturation (O2)", -0.0683],
-        ["Serum Potassium", -0.0465],
+        ["Serum Creatinine", -0.0312],
         ["Blood Glucose", -0.0206],
-        ["Systolic BP (SBP)", -0.0123]
+        ["Serum Potassium", -0.0465],
+        ["Serum Sodium", -0.0178],
+        ["Heart Rate (HR)", -0.0123]
       ];
 
   const isLowRisk = riskScore < 0.15;
@@ -305,20 +316,31 @@ export default function DetailedReportPage() {
           <div className="space-y-3 pt-2">
             {shapEntries.map(([feature, val], idx) => {
               const isProtective = val <= 0;
+              const maxAbsShap = Math.max(...shapEntries.map(([, v]) => Math.abs(v)), 0.001);
+              const barWidthPct = Math.min((Math.abs(val) / maxAbsShap) * 100, 100);
               return (
-                <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900/80 print:bg-white p-3.5 rounded-xl border border-slate-800 print:border-gray-300 gap-2">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${isProtective ? "bg-emerald-500" : "bg-amber-500"}`} />
-                    <span className="font-semibold text-slate-200 print:text-black text-sm">{feature}</span>
+                <div key={idx} className="bg-slate-900/80 print:bg-white rounded-xl border border-slate-800 print:border-gray-300 overflow-hidden">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between p-3.5 gap-2">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full shrink-0 ${isProtective ? "bg-emerald-500" : "bg-amber-500"}`} />
+                      <span className="font-semibold text-slate-200 print:text-black text-sm">{feature}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isProtective ? "text-emerald-400 bg-emerald-500/10" : "text-amber-400 bg-amber-500/10"}`}>
+                        {isProtective ? "Protective Factor" : "Risk Factor"}
+                      </span>
+                      <span className="text-xs font-mono text-slate-500 print:text-gray-500">
+                        SHAP: {val > 0 ? `+${val.toFixed(4)}` : val.toFixed(4)}
+                      </span>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <span className={`text-xs font-medium ${isProtective ? "text-emerald-400" : "text-amber-400"}`}>
-                      {isProtective ? "Lowered Risk (Protective Factor)" : "Increased Risk"}
-                    </span>
-                    <span className="text-xs font-mono text-slate-500 print:text-gray-500">
-                      SHAP: {val > 0 ? `+${val.toFixed(4)}` : val.toFixed(4)}
-                    </span>
+                  {/* Visual SHAP impact bar */}
+                  <div className="h-1.5 w-full bg-slate-950/50 print:bg-gray-100">
+                    <div 
+                      className={`h-full rounded-r transition-all duration-700 ${isProtective ? 'bg-gradient-to-r from-emerald-600 to-emerald-400' : 'bg-gradient-to-r from-amber-600 to-amber-400'}`}
+                      style={{ width: `${barWidthPct}%` }}
+                    />
                   </div>
                 </div>
               );
@@ -343,8 +365,25 @@ export default function DetailedReportPage() {
             {ecgImgUrl ? (
               <div className="space-y-2">
                 <p className="text-xs text-slate-400 print:text-gray-600 font-medium">Uploaded Patient 12-Lead ECG Document:</p>
-                <div className="rounded-xl border border-slate-800 overflow-hidden bg-black p-2 max-h-[450px] flex items-center justify-center">
-                  <img src={ecgImgUrl} alt="Uploaded 12-Lead ECG" className="max-h-[430px] w-auto object-contain rounded" />
+                <div className="rounded-xl border border-slate-800 overflow-hidden bg-slate-950 p-3 flex items-center justify-center" style={{ minHeight: '200px' }}>
+                  <img 
+                    src={ecgImgUrl} 
+                    alt="Uploaded 12-Lead ECG" 
+                    className="max-h-[430px] w-auto object-contain rounded" 
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      target.style.display = 'none';
+                      const fallback = target.parentElement?.querySelector('.ecg-fallback');
+                      if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                    }}
+                  />
+                  <div className="ecg-fallback flex-col items-center justify-center gap-3 py-8" style={{ display: 'none' }}>
+                    <Heart className="w-12 h-12 text-slate-600" />
+                    <p className="text-slate-500 text-sm font-medium">ECG image could not be loaded</p>
+                    <p className="text-slate-600 text-xs">The signed URL may have expired. The ECG data was still analyzed by AI.</p>
+                    <a href={ecgImgUrl} target="_blank" rel="noopener noreferrer" className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 underline">Try opening directly →</a>
+                  </div>
                 </div>
               </div>
             ) : interactiveEcgData ? (
@@ -352,7 +391,13 @@ export default function DetailedReportPage() {
                 <p className="text-xs text-slate-400 print:text-gray-600 font-medium">Standard 3x4 Layout + Lead II Rhythm Strip:</p>
                 <InteractiveEcgViewer rawEcg={interactiveEcgData.rawEcg} gradCam={interactiveEcgData.gradCam} />
               </div>
-            ) : null}
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/50 p-8 flex flex-col items-center justify-center gap-3">
+                <Heart className="w-10 h-10 text-slate-600" />
+                <p className="text-slate-500 text-sm font-medium">ECG waveform analyzed by AI</p>
+                <p className="text-slate-600 text-xs text-center max-w-sm">The 12-lead ECG data was processed. Visual preview is shown in the parameter cards below.</p>
+              </div>
+            )}
 
             {/* Extracted Clinical Abnormality / Summary Box */}
             <div className="p-4 bg-slate-900 print:bg-white rounded-xl border border-slate-800 print:border-gray-300 space-y-2">
