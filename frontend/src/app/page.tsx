@@ -11,7 +11,7 @@ export default function LandingPage() {
   
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    window.location.reload()
+    window.location.href = '/'
   }
   return (
     <div className="min-h-screen bg-[#0B0F19] text-slate-200 flex flex-col font-sans selection:bg-blue-500/30 relative overflow-hidden">
@@ -23,19 +23,25 @@ export default function LandingPage() {
       </div>
       {/* Header */}
       <header className="absolute top-0 w-full p-6 flex justify-between items-center z-10 border-b border-white/10 bg-[#0B0F19]/70 backdrop-blur-xl shadow-lg">
-        <div className="flex items-center space-x-3">
+        <Link href="/" title="OmniFusion Landing Page" className="flex items-center space-x-3 cursor-pointer hover:opacity-90 transition-opacity">
           <Activity className="w-8 h-8 text-emerald-400" />
           <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
             Omni-Fusion
           </span>
-        </div>
+        </Link>
         <div className="flex items-center space-x-4">
           {user ? (
             <>
-              <button onClick={handleLogout} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+              <button 
+                onClick={handleLogout} 
+                className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
+              >
                 Sign Out
               </button>
-              <Link href={profile?.role === 'DOCTOR' ? '/doctor' : '/patient'} className="text-sm font-medium px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full transition-all shadow-lg shadow-emerald-900/20">
+              <Link 
+                href={profile?.role === 'DOCTOR' ? '/doctor' : '/patient'} 
+                className="text-sm font-medium px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-full transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
+              >
                 Go to Dashboard
               </Link>
             </>

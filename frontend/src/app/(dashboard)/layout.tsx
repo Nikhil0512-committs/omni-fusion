@@ -49,9 +49,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       transition={{ type: "spring", stiffness: 330, damping: 34 }}
       className={`dashboard-sidebar ${mobile ? "mobile-sidebar" : "desktop-sidebar"}`}
     >
-      <div className="brand-row">
-        <div className="brand-mark"><HeartPulse size={21} /></div>
-        {(!collapsed || mobile) && <span className="brand-name">Omni<span>Fusion</span></span>}
+      <div className="brand-row flex items-center justify-between">
+        <Link href="/" title="Return to Landing Page" className="flex items-center space-x-2.5 hover:opacity-90 transition-opacity cursor-pointer">
+          <div className="brand-mark"><HeartPulse size={21} /></div>
+          {(!collapsed || mobile) && <span className="brand-name">Omni<span>Fusion</span></span>}
+        </Link>
         {mobile && <button className="icon-button ml-auto" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X size={19}/></button>}
       </div>
       <div className="sidebar-content">
