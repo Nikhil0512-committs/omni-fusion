@@ -2,30 +2,30 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 class VitalsInput(BaseModel):
-    anchor_age: float
-    gender: float
-    Creatinine: float
-    Glucose: float
-    Potassium: float
-    Sodium: float
-    HR: float
-    SBP: float
-    DBP: float
-    RR: float
-    O2: float
+    anchor_age: float = 65.0
+    gender: float = 1.0
+    Creatinine: float = 1.1
+    Glucose: float = 100.0
+    Potassium: float = 4.0
+    Sodium: float = 139.0
+    HR: float = 82.0
+    SBP: float = 135.0
+    DBP: float = 80.0
+    RR: float = 16.0
+    O2: float = 98.0
 
 class HistoricalInput(BaseModel):
-    anchor_age: float
-    gender: float
-    Creatinine: float
-    Glucose: float
-    Potassium: float
-    Sodium: float
-    HR: float
-    SBP: float
-    DBP: float
-    RR: float
-    O2: float
+    anchor_age: float = 65.0
+    gender: float = 1.0
+    Creatinine: float = 1.1
+    Glucose: float = 100.0
+    Potassium: float = 4.0
+    Sodium: float = 139.0
+    HR: float = 82.0
+    SBP: float = 135.0
+    DBP: float = 80.0
+    RR: float = 16.0
+    O2: float = 98.0
 
 class PredictRequest(BaseModel):
     patient_id: str

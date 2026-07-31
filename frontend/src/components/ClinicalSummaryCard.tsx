@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface ClinicalSummaryCardProps {
   predictionId: string;
@@ -14,13 +15,14 @@ export const ClinicalSummaryCard: React.FC<ClinicalSummaryCardProps> = ({ predic
     const fetchSummary = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('supabase.auth.token');
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
-        if (token) {
-          const parsed = JSON.parse(token);
-          headers['Authorization'] = `Bearer ${parsed.currentSession.access_token}`;
+        if (data.session?.access_token) {
+          headers['Authorization'] = `Bearer ${data.session.access_token}`;
         }
         
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';

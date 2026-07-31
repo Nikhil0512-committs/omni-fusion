@@ -38,7 +38,19 @@ type RawStoredPrediction = { id:string; created_at:string; risk_score:number; st
 type RawProfile = Record<string, unknown> & { id:string; role:'PATIENT'|'DOCTOR' };
 type RawLink = { id:string; patient_id:string; doctor_id:string; status:'pending'|'accepted'|'rejected'; created_at:string; profiles:RawProfile; latest_triage_tier?:string };
 
-const mapVitalsToWire = (value: VitalsInput): SnakeVitals => ({ anchor_age:value.anchorAge,gender:value.gender,Creatinine:value.creatinine,Glucose:value.glucose,Potassium:value.potassium,Sodium:value.sodium,HR:value.hr,SBP:value.sbp,DBP:value.dbp,RR:value.rr,O2:value.o2 });
+const mapVitalsToWire = (value: VitalsInput): SnakeVitals => ({ 
+  anchor_age: value.anchorAge ?? 65.0,
+  gender: value.gender ?? 1.0,
+  Creatinine: value.creatinine ?? 1.1,
+  Glucose: value.glucose ?? 100.0,
+  Potassium: value.potassium ?? 4.0,
+  Sodium: value.sodium ?? 139.0,
+  HR: value.hr ?? 82.0,
+  SBP: value.sbp ?? 135.0,
+  DBP: value.dbp ?? 80.0,
+  RR: value.rr ?? 16.0,
+  O2: value.o2 ?? 98.0 
+});
 const mapVitalsFromWire = (value: any): any => ({ anchorAge:value.anchor_age,gender:value.gender,creatinine:value.Creatinine,glucose:value.Glucose,potassium:value.Potassium,sodium:value.Sodium,hr:value.HR,sbp:value.SBP,dbp:value.DBP,rr:value.RR,o2:value.O2, uploadedImagePath: value.uploaded_image_path, ecgAbnormality: value.ecg_abnormality });
 const mapPredictRequest = (value: PredictRequest) => ({ patient_id:value.patientId,ecg:value.ecg,vitals:value.vitals?mapVitalsToWire(value.vitals):undefined,historical:value.historical?mapVitalsToWire(value.historical):undefined,upload_session_id:value.uploadSessionId,offline_client_id:value.offlineClientId,is_ecg_only:value.isEcgOnly,blood_image_path:value.bloodImagePath,ecg_image_path:value.ecgImagePath,ecg_abnormality:value.ecgAbnormality });
 
