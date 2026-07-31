@@ -9,38 +9,49 @@ export default function LandingPage() {
   const { user, profile } = useAuth()
   const supabase = createClient()
   
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/'
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      if (signOut) {
+        await signOut();
+      }
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
+    window.location.href = '/login';
   }
+
   return (
     <div className="min-h-screen bg-[#0B0F19] text-slate-200 flex flex-col font-sans selection:bg-blue-500/30 relative overflow-hidden">
       {/* Dynamic Mesh Background */}
-      <div className="absolute inset-0 z-0 opacity-40">
+      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/30 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
         <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
       </div>
       {/* Header */}
-      <header className="absolute top-0 w-full p-6 flex justify-between items-center z-10 border-b border-white/10 bg-[#0B0F19]/70 backdrop-blur-xl shadow-lg">
-        <Link href="/" title="OmniFusion Landing Page" className="flex items-center space-x-3 cursor-pointer hover:opacity-90 transition-opacity">
+      <header className="absolute top-0 w-full p-6 flex justify-between items-center z-50 border-b border-white/10 bg-[#0B0F19]/80 backdrop-blur-xl shadow-lg">
+        <Link href="/" title="OmniFusion Landing Page" className="relative z-50 flex items-center space-x-3 cursor-pointer hover:opacity-90 transition-opacity">
           <Activity className="w-8 h-8 text-emerald-400" />
           <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
             Omni-Fusion
           </span>
         </Link>
-        <div className="flex items-center space-x-4">
+        <div className="relative z-50 flex items-center space-x-4">
           {user ? (
             <>
               <button 
+                type="button"
                 onClick={handleLogout} 
-                className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
+                className="relative z-50 text-sm font-medium text-slate-300 hover:text-white transition-colors px-3.5 py-2 rounded-lg hover:bg-white/10 cursor-pointer"
               >
                 Sign Out
               </button>
               <Link 
                 href={profile?.role === 'DOCTOR' ? '/doctor' : '/patient'} 
-                className="text-sm font-medium px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-full transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                className="relative z-50 text-sm font-medium px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-full transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer inline-block"
               >
                 Go to Dashboard
               </Link>
