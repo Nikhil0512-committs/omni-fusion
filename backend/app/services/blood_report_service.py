@@ -95,15 +95,12 @@ class BloodReportService:
 
         except httpx.HTTPStatusError as e:
             logger.error(f"Gemini API error: {e.response.text}")
-            logger.warning("Falling back to dummy extracted data for demo purposes.")
-            return {"creatinine": 1.1, "glucose": 95, "potassium": 4.2, "sodium": 140, "hr": 75, "sbp": 120, "dbp": 80, "anchor_age": 45, "gender": 1}
+            raise HTTPException(status_code=502, detail="Failed to analyze blood report via AI service. Please try again.")
         except ValueError as e:
             logger.error(f"Validation error in extracted data: {e}")
-            logger.warning("Falling back to dummy extracted data for demo purposes.")
-            return {"creatinine": 1.1, "glucose": 95, "potassium": 4.2, "sodium": 140, "hr": 75, "sbp": 120, "dbp": 80, "anchor_age": 45, "gender": 1}
+            raise HTTPException(status_code=422, detail=str(e))
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}")
-            logger.warning("Falling back to dummy extracted data for demo purposes.")
-            return {"creatinine": 1.1, "glucose": 95, "potassium": 4.2, "sodium": 140, "hr": 75, "sbp": 120, "dbp": 80, "anchor_age": 45, "gender": 1}
+            raise HTTPException(status_code=500, detail="An unexpected error occurred while parsing the blood report.")
 
 blood_report_service = BloodReportService()

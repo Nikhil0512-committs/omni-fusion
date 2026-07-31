@@ -3,6 +3,7 @@ import json
 import base64
 from typing import Dict, Any
 import httpx
+from fastapi import HTTPException
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -98,11 +99,14 @@ class EcgReportService:
                         return {"ecg_abnormality": raw_text}
                 except (KeyError, IndexError) as parse_err:
                     logger.error(f"Could not extract text from Gemini response: {parse_err}")
+                    raise HTTPException(status_code=502, detail="Failed to extract ECG findings from AI response.")
 
-            return {"ecg_abnormality": "12-Lead ECG report analyzed. Standard rhythm recorded."}
+            raise HTTPException(status_code=422, detail="Could not read a valid ECG report from the provided file.")
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error parsing ECG report: {e}")
-            return {"ecg_abnormality": "12-Lead ECG report uploaded and analyzed."}
+            raise HTTPException(status_code=500, detail="An unexpected error occurred while parsing the ECG report.")
 
 ecg_report_service = EcgReportService()
