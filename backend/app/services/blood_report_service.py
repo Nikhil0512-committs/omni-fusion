@@ -57,25 +57,35 @@ class BloodReportService:
                 }
             }
 
-            import time
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    with httpx.Client(timeout=60.0) as client:
-                        response = client.post(
-                            api_url,
-                            json=payload,
-                            headers={"Content-Type": "application/json"}
-                        )
-                        
-                    response.raise_for_status()
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-flash-latest", "gemini-1.5-pro"]
+        response = None
+        last_http_error = None
+
+        for model_name in models_to_try:
+            api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={current_api_key}"
+            try:
+                with httpx.Client(timeout=60.0) as client:
+                    resp = client.post(
+                        api_url,
+                        json=payload,
+                        headers={"Content-Type": "application/json"}
+                    )
+                if resp.status_code == 200:
+                    response = resp
+                    logger.info(f"Successfully generated blood report extraction using model: {model_name}")
                     break
-                except httpx.HTTPStatusError as e:
-                    if e.response.status_code in [429, 503] and attempt < max_retries - 1:
-                        time.sleep(2 ** attempt)
-                        continue
-                    raise e
-            response_data = response.json()
+                else:
+                    logger.warning(f"Model {model_name} returned status {resp.status_code}: {resp.text}")
+                    last_http_error = resp
+            except Exception as req_err:
+                logger.warning(f"Request failed for model {model_name}: {req_err}")
+
+        if not response:
+            if last_http_error is not None:
+                last_http_error.raise_for_status()
+            raise HTTPException(status_code=502, detail="Failed to connect to any Gemini AI vision model.")
+
+        response_data = response.json()
             
             try:
                 text = response_data["candidates"][0]["content"]["parts"][0]["text"]

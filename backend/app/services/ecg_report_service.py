@@ -61,37 +61,35 @@ class EcgReportService:
                 }
             }
 
-            import time
-            max_retries = 3
-            response_data = None
-            for attempt in range(max_retries):
-                try:
-                    with httpx.Client(timeout=60.0) as client:
-                        response = client.post(
-                            api_url,
-                            json=payload,
-                            headers={"Content-Type": "application/json"}
-                        )
-                    response.raise_for_status()
-                    response_data = response.json()
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-flash-latest", "gemini-1.5-pro"]
+        response = None
+        last_http_error = None
+
+        for model_name in models_to_try:
+            api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={current_api_key}"
+            try:
+                with httpx.Client(timeout=60.0) as client:
+                    resp = client.post(
+                        api_url,
+                        json=payload,
+                        headers={"Content-Type": "application/json"}
+                    )
+                if resp.status_code == 200:
+                    response = resp
+                    logger.info(f"Successfully generated ECG extraction using model: {model_name}")
                     break
-                except httpx.HTTPStatusError as e:
-                    if e.response.status_code in [429, 503] and attempt < max_retries - 1:
-                        time.sleep(2 ** attempt)
-                        continue
-                    error_text = e.response.text
-                    logger.error(f"Gemini API HTTP status error ({e.response.status_code}): {error_text}")
-                    detail_msg = f"Gemini AI Error ({e.response.status_code})"
-                    try:
-                        err_json = e.response.json()
-                        if "error" in err_json and "message" in err_json["error"]:
-                            detail_msg = f"AI Engine: {err_json['error']['message']}"
-                    except Exception:
-                        pass
-                    raise HTTPException(status_code=502, detail=detail_msg)
-                except Exception as req_err:
-                    logger.error(f"Gemini API request failed: {req_err}")
-                    raise HTTPException(status_code=500, detail=f"Gemini API request failed: {str(req_err)}")
+                else:
+                    logger.warning(f"Model {model_name} returned status {resp.status_code}: {resp.text}")
+                    last_http_error = resp
+            except Exception as req_err:
+                logger.warning(f"Request failed for model {model_name}: {req_err}")
+
+        if not response:
+            if last_http_error is not None:
+                last_http_error.raise_for_status()
+            raise HTTPException(status_code=502, detail="Failed to connect to any Gemini AI vision model.")
+
+        response_data = response.json()
 
             if response_data:
                 try:
