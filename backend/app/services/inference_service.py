@@ -208,7 +208,19 @@ class InferenceService:
         v_t = torch.tensor(vitals_arr).to(device)
         h_t = torch.tensor(hist_arr).unsqueeze(1).to(device)
         
-        ecg_np = np.array(req.ecg, dtype=np.float32).reshape(1, 12, 1000)
+        # Safely validate and construct 12-lead ECG tensor
+        try:
+            if req.ecg and len(req.ecg) > 0:
+                ecg_np = np.array(req.ecg, dtype=np.float32)
+                if ecg_np.size == 12000:
+                    ecg_np = ecg_np.reshape(1, 12, 1000)
+                else:
+                    ecg_np = np.zeros((1, 12, 1000), dtype=np.float32)
+            else:
+                ecg_np = np.zeros((1, 12, 1000), dtype=np.float32)
+        except Exception:
+            ecg_np = np.zeros((1, 12, 1000), dtype=np.float32)
+
         pat_ecg = torch.tensor(ecg_np).to(device)
 
         with torch.no_grad():

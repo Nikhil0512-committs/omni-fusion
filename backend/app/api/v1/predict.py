@@ -149,15 +149,14 @@ async def predict(request: Request, payload: PredictRequest, user_data: dict = D
                     logger.warning(f"Notification creation failed: {notif_err}")
 
         except Exception as e:
-            logger.error(f"Failed to insert prediction into Supabase: {e}")
-            raise HTTPException(status_code=500, detail=f"Database constraint error while saving prediction: {e}")
+            logger.warning(f"Could not save prediction to Supabase DB: {e}")
         
         return prediction
     except HTTPException:
         raise
     except Exception as error:
-        logger.error("Error during prediction: %s", error)
-        raise HTTPException(status_code=500, detail="Internal Server Error during prediction.") from error
+        logger.error("Error during prediction: %s", error, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Prediction Error: {str(error)}") from error
 
 @router.post("/predict/counterfactual", response_model=PredictResponse)
 @limiter.limit("10/minute")
