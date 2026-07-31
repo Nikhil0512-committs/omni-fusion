@@ -242,7 +242,7 @@ export default function DetailedReportPage() {
                 </span>
               </h2>
               <p className="text-slate-400 print:text-gray-600 text-sm mt-2 max-w-lg">
-                Integrated analysis across 12-lead ECG, Blood Biomarkers, and Vital Telemetry shows strong physiological protection.
+                Integrated analysis across {streamBadgeText} shows strong physiological protection.
               </p>
             </div>
 
@@ -250,7 +250,7 @@ export default function DetailedReportPage() {
               <Sparkles className="w-6 h-6 text-teal-400" />
               <div>
                 <p className="text-xs text-slate-400 print:text-gray-500 font-semibold">AI Confidence Score</p>
-                <p className="text-lg font-bold text-white print:text-black">98.4% Multimodal</p>
+                <p className="text-lg font-bold text-white print:text-black">{calculatedConfidence}% {streamBadgeText}</p>
               </div>
             </div>
           </div>
