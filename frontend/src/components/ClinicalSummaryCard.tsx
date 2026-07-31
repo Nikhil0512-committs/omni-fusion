@@ -18,13 +18,13 @@ export const ClinicalSummaryCard: React.FC<ClinicalSummaryCardProps> = ({ predic
       try {
         setIsLoading(true);
         const supabase = createClient();
-        const { data } = await supabase.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
         
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
-        if (data.session?.access_token) {
-          headers['Authorization'] = `Bearer ${data.session.access_token}`;
+        if (sessionData.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
         }
         
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -38,8 +38,8 @@ export const ClinicalSummaryCard: React.FC<ClinicalSummaryCardProps> = ({ predic
           throw new Error('Failed to generate summary');
         }
 
-        const data = await response.json();
-        setSummary(data.soap_note);
+        const summaryData = await response.json();
+        setSummary(summaryData.soap_note);
       } catch (err) {
         setError('GenAI Clinical Co-Pilot is currently unavailable. Please rely on the raw metrics provided.');
       } finally {
