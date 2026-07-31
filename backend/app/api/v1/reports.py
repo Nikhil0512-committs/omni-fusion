@@ -293,71 +293,80 @@ async def generate_report(request: Request, payload: ReportRequest, prediction_i
         # Upload to Supabase Storage
         file_name = f"{prediction_id}_{uuid.uuid4().hex[:8]}.pdf"
         storage_path = f"generated_reports/{file_name}"
+        signed_url = ""
         
         try:
             with open(pdf_path, 'rb') as f:
                 supabase.storage.from_("reports").upload(storage_path, f, file_options={"content-type": "application/pdf"})
                 
             # Cleanup local PDF
-            os.remove(pdf_path)
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
             
             # Generate Signed URL (valid for 1 hour)
             signed_url_res = supabase.storage.from_("reports").create_signed_url(storage_path, 3600)
             signed_url = signed_url_res.get('signedURL', '')
             if not signed_url:
                 signed_url = supabase.storage.from_("reports").get_public_url(storage_path)
+        except Exception as e:
+            logger.warning(f"Could not upload PDF report to Supabase (likely test env): {e}")
+            storage_path = ""
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
                 
-            # Persist the ECG explanation separately so authorized clinicians can inspect it in-app.
-            gradcam_ref = "embedded_in_pdf"
-            
-            # Save interactive JSON data if available
-            if payload.ecg_gradcam_data and payload.raw_ecg:
-                try:
-                    interactive_data = {
-                        "ecg_gradcam_data": payload.ecg_gradcam_data,
-                        "raw_ecg": payload.raw_ecg
-                    }
-                    gradcam_ref = f"generated_reports/{prediction_id}_{uuid.uuid4().hex[:8]}_ecg.json"
-                    
-                    # Convert dict to bytes
-                    json_bytes = json.dumps(interactive_data).encode('utf-8')
-                    
-                    supabase.storage.from_("reports").upload(
-                        gradcam_ref,
-                        json_bytes,
-                        file_options={"content-type": "application/json"},
-                    )
-                except Exception as e:
-                    logger.warning(f"Could not persist interactive ECG visualization JSON: {e}")
-                    gradcam_ref = "embedded_in_pdf"
-            elif payload.ecg_gradcam_heatmap_b64:
-                try:
-                    image_data = payload.ecg_gradcam_heatmap_b64.split(",", 1)[-1]
-                    gradcam_ref = f"generated_reports/{prediction_id}_{uuid.uuid4().hex[:8]}_ecg.png"
-                    supabase.storage.from_("reports").upload(
-                        gradcam_ref,
-                        base64.b64decode(image_data),
-                        file_options={"content-type": "image/png"},
-                    )
-                except Exception as image_error:
-                    logger.warning(f"Could not persist ECG visualization separately: {image_error}")
-                    gradcam_ref = "embedded_in_pdf"
+        # Persist the ECG explanation separately so authorized clinicians can inspect it in-app.
+        gradcam_ref = "embedded_in_pdf"
+        
+        # Save interactive JSON data if available
+        if payload.ecg_gradcam_data and payload.raw_ecg:
+            try:
+                interactive_data = {
+                    "ecg_gradcam_data": payload.ecg_gradcam_data,
+                    "raw_ecg": payload.raw_ecg
+                }
+                gradcam_ref = f"generated_reports/{prediction_id}_{uuid.uuid4().hex[:8]}_ecg.json"
+                
+                # Convert dict to bytes
+                json_bytes = json.dumps(interactive_data).encode('utf-8')
+                
+                supabase.storage.from_("reports").upload(
+                    gradcam_ref,
+                    json_bytes,
+                    file_options={"content-type": "application/json"},
+                )
+            except Exception as e:
+                logger.warning(f"Could not persist interactive ECG visualization JSON: {e}")
+                gradcam_ref = "embedded_in_pdf"
+        elif payload.ecg_gradcam_heatmap_b64:
+            try:
+                image_data = payload.ecg_gradcam_heatmap_b64.split(",", 1)[-1]
+                gradcam_ref = f"generated_reports/{prediction_id}_{uuid.uuid4().hex[:8]}_ecg.png"
+                supabase.storage.from_("reports").upload(
+                    gradcam_ref,
+                    base64.b64decode(image_data),
+                    file_options={"content-type": "image/png"},
+                )
+            except Exception as image_error:
+                logger.warning(f"Could not persist ECG visualization separately: {image_error}")
+                gradcam_ref = "embedded_in_pdf"
 
+        try:
             # Insert into reports table
             report_id = str(uuid.uuid4())
-            supabase.table('reports').insert({
+            insert_report_data = {
                 'id': report_id,
                 'prediction_id': prediction_id,
                 'shap_data': payload.shap_data,
                 'gradcam_ref': gradcam_ref,
                 'failure_analysis_text': failure_analysis_summary,
-                'pdf_storage_path': storage_path
-            }).execute()
+            }
+            if storage_path:
+                insert_report_data['pdf_storage_path'] = storage_path
+                
+            supabase.table('reports').insert(insert_report_data).execute()
         except Exception as e:
-            logger.warning(f"Could not persist report to Supabase (likely test env): {e}")
-            signed_url = ""
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+            logger.error(f"Failed to insert into reports table: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to save report to database: {e}")
         
         return ReportResponse(
             prediction_id=prediction_id,

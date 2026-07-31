@@ -140,6 +140,7 @@ async def predict(request: Request, payload: PredictRequest, user_data: dict = D
 
         except Exception as e:
             logger.error(f"Failed to insert prediction into Supabase: {e}")
+            raise HTTPException(status_code=500, detail=f"Database constraint error while saving prediction: {e}")
         
         return prediction
     except HTTPException:
