@@ -128,10 +128,8 @@ export default function Dashboard() {
           console.warn("Report generation notice:", repErr);
         }
       } catch (onlineErr) {
-        console.warn("Online inference failed, trying offline:", onlineErr);
-        // Fall back to offline inference if API is unreachable
-        pred = await runOfflineInference(payload);
-        setReport(null);
+        console.error("Online inference error:", onlineErr);
+        throw onlineErr;
       }
 
       setPrediction(pred);

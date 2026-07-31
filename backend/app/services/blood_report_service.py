@@ -25,6 +25,14 @@ class BloodReportService:
 
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={current_api_key}"
 
+        from app.services.pdf_extractor import extract_text_from_pdf_bytes, parse_lab_values_from_text
+        
+        pdf_text = ""
+        local_parsed = {}
+        if "pdf" in mime_type.lower():
+            pdf_text = extract_text_from_pdf_bytes(file_content)
+            local_parsed = parse_lab_values_from_text(pdf_text)
+
         system_instruction = (
             "You are a clinical AI assistant that extracts lab values from blood reports and medical documents.\n"
             "Extract the following values if present: creatinine, glucose, potassium, sodium, hr (heart rate), sbp (systolic blood pressure), dbp (diastolic blood pressure), rr (respiratory rate), o2 (oxygen saturation), anchor_age (patient age), gender (1 for male, 0 for female).\n"
@@ -33,6 +41,8 @@ class BloodReportService:
         )
 
         user_content = "Please extract the lab values and vitals from this attached medical report."
+        if pdf_text:
+            user_content += f"\n\nHere is the raw text extracted from the document:\n{pdf_text[:3000]}"
 
         try:
             b64_data = base64.b64encode(file_content).decode('utf-8')
@@ -81,6 +91,9 @@ class BloodReportService:
                     logger.warning(f"Request failed for model {model_name}: {req_err}")
 
             if not response:
+                if local_parsed and all(k in local_parsed for k in ['creatinine', 'glucose', 'potassium', 'sodium']):
+                    logger.info("Using PyMuPDF local text parsing for blood report extraction!")
+                    return local_parsed
                 if last_http_error is not None:
                     last_http_error.raise_for_status()
                 raise HTTPException(status_code=502, detail="Failed to connect to any Gemini AI vision model.")
@@ -92,9 +105,17 @@ class BloodReportService:
                 # Parse the JSON
                 extracted_data = json.loads(text)
             except (KeyError, IndexError, json.JSONDecodeError) as e:
+                if local_parsed and all(k in local_parsed for k in ['creatinine', 'glucose', 'potassium', 'sodium']):
+                    return local_parsed
                 logger.error(f"Failed to parse Gemini response: {e}, Response: {response_data}")
                 raise ValueError("Could not parse the report data correctly.")
                 
+            # Merge local PyMuPDF regex extractions if Gemini missed any field
+            if local_parsed:
+                for k, v in local_parsed.items():
+                    if extracted_data.get(k) is None:
+                        extracted_data[k] = v
+
             # Validate required fields
             required_fields = ['creatinine', 'glucose', 'potassium', 'sodium']
             missing_fields = []

@@ -25,6 +25,12 @@ class EcgReportService:
 
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={current_api_key}"
 
+        from app.services.pdf_extractor import extract_text_from_pdf_bytes
+        
+        pdf_text = ""
+        if "pdf" in mime_type.lower():
+            pdf_text = extract_text_from_pdf_bytes(file_content)
+
         system_instruction = (
             "You are an expert cardiologist and clinical AI assistant analyzing a 12-lead ECG report image or document.\n"
             "Carefully examine the image and extract all written clinical parameters, measurements, and text interpretations.\n"
@@ -37,6 +43,8 @@ class EcgReportService:
         )
 
         user_content = "Please analyze this attached ECG report/image and provide the exact clinical parameters and diagnosis summary."
+        if pdf_text:
+            user_content += f"\n\nHere is the raw text extracted from the document:\n{pdf_text[:3000]}"
 
         try:
             b64_data = base64.b64encode(file_content).decode('utf-8')
@@ -85,6 +93,9 @@ class EcgReportService:
                     logger.warning(f"Request failed for model {model_name}: {req_err}")
 
             if not response:
+                if pdf_text and len(pdf_text) > 10:
+                    logger.info("Using PyMuPDF extracted text for ECG report analysis fallback.")
+                    return {"ecg_abnormality": pdf_text[:1000]}
                 if last_http_error is not None:
                     last_http_error.raise_for_status()
                 raise HTTPException(status_code=502, detail="Failed to connect to any Gemini AI vision model.")
