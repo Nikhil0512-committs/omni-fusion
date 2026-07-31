@@ -127,6 +127,8 @@ async def upload_blood_report(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error processing blood report upload: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error during blood report processing.")
@@ -191,6 +193,8 @@ async def upload_ecg_report(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error processing ECG report upload: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error during ECG report processing.")
