@@ -5,7 +5,6 @@ import { Activity, Download, ChevronRight, FileText, CheckCircle, AlertCircle } 
 import FileUploadZone from '@/components/FileUploadZone';
 import HistoryTimeline from '@/components/HistoryTimeline';
 import ShapWaterfall from '@/components/ShapWaterfall';
-import { InteractiveEcgViewer } from '@/components/InteractiveEcgViewer';
 import { WhatIfExplorer } from '@/components/WhatIfExplorer';
 import { TriageBadge } from '@/components/TriageBadge';
 import { ClinicalSummaryCard } from '@/components/ClinicalSummaryCard';
@@ -23,7 +22,6 @@ export default function Dashboard() {
   const [bloodImagePath, setBloodImagePath] = useState<string | null>(null);
   const [ecgImagePath, setEcgImagePath] = useState<string | null>(null);
   const [ecgPreviewUrl, setEcgPreviewUrl] = useState<string | null>(null);
-  const [activeEcgTab, setActiveEcgTab] = useState<'uploaded' | 'interactive'>('uploaded');
   
   const [historicalData, setHistoricalData] = useState<VitalsInput | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
