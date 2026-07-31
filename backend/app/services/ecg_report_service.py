@@ -18,6 +18,13 @@ class EcgReportService:
         """
         Parses an ECG report (PDF/Image) using Gemini to extract clinical parameters and interpretations.
         """
+        import os
+        current_api_key = settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
+        if not current_api_key:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY environment variable is not configured on the server.")
+
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={current_api_key}"
+
         system_instruction = (
             "You are an expert cardiologist and clinical AI assistant analyzing a 12-lead ECG report image or document.\n"
             "Carefully examine the image and extract all written clinical parameters, measurements, and text interpretations.\n"
@@ -61,7 +68,7 @@ class EcgReportService:
                 try:
                     with httpx.Client(timeout=60.0) as client:
                         response = client.post(
-                            self.api_url,
+                            api_url,
                             json=payload,
                             headers={"Content-Type": "application/json"}
                         )
@@ -72,11 +79,19 @@ class EcgReportService:
                     if e.response.status_code in [429, 503] and attempt < max_retries - 1:
                         time.sleep(2 ** attempt)
                         continue
-                    logger.error(f"Gemini API HTTP status error: {e.response.status_code} - {e.response.text}")
-                    break
+                    error_text = e.response.text
+                    logger.error(f"Gemini API HTTP status error ({e.response.status_code}): {error_text}")
+                    detail_msg = f"Gemini AI Error ({e.response.status_code})"
+                    try:
+                        err_json = e.response.json()
+                        if "error" in err_json and "message" in err_json["error"]:
+                            detail_msg = f"AI Engine: {err_json['error']['message']}"
+                    except Exception:
+                        pass
+                    raise HTTPException(status_code=502, detail=detail_msg)
                 except Exception as req_err:
                     logger.error(f"Gemini API request failed: {req_err}")
-                    break
+                    raise HTTPException(status_code=500, detail=f"Gemini API request failed: {str(req_err)}")
 
             if response_data:
                 try:
