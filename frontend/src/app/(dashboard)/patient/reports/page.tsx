@@ -121,8 +121,8 @@ export default function PatientReports() {
               <FileText className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Total Reports</p>
-              <p className="text-lg font-bold text-white">{totalReports}</p>
+              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Total Reports</p>
+              <p className="text-lg font-bold text-blue-400">{totalReports}</p>
             </div>
           </div>
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
@@ -130,7 +130,7 @@ export default function PatientReports() {
               <Shield className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Avg Risk</p>
+              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Avg Risk</p>
               <p className={`text-lg font-bold ${getRiskColor(avgRisk)}`}>{(avgRisk * 100).toFixed(1)}%</p>
             </div>
           </div>
@@ -139,8 +139,8 @@ export default function PatientReports() {
               <AlertTriangle className="w-5 h-5 text-red-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">High Risk</p>
-              <p className="text-lg font-bold text-white">{highRiskCount}</p>
+              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>High Risk</p>
+              <p className="text-lg font-bold text-red-400">{highRiskCount}</p>
             </div>
           </div>
         </div>
