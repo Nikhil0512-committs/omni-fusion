@@ -77,19 +77,19 @@ export default function Dashboard() {
         );
       }
 
-      // Extract vitals from historical if available, otherwise medical baseline normal
+      // Extract vitals from historical if available, with robust fallback for camelCase and uppercase keys
       const dummyVitals = {
-        anchorAge: historicalData?.anchorAge ?? 45.0,
-        gender: historicalData?.gender ?? 1,
-        creatinine: historicalData?.creatinine ?? 1.1,
-        glucose: historicalData?.glucose ?? 95.0,
-        potassium: historicalData?.potassium ?? 4.2,
-        sodium: historicalData?.sodium ?? 140.0,
-        hr: historicalData?.hr ?? 72.0,
-        sbp: historicalData?.sbp ?? 120.0,
-        dbp: historicalData?.dbp ?? 80.0,
-        rr: historicalData?.rr ?? 14.0,
-        o2: historicalData?.o2 ?? 99.0
+        anchorAge: (historicalData as any)?.anchorAge ?? (historicalData as any)?.anchor_age ?? 45.0,
+        gender: (historicalData as any)?.gender ?? 1,
+        creatinine: (historicalData as any)?.creatinine ?? (historicalData as any)?.Creatinine ?? 1.1,
+        glucose: (historicalData as any)?.glucose ?? (historicalData as any)?.Glucose ?? 95.0,
+        potassium: (historicalData as any)?.potassium ?? (historicalData as any)?.Potassium ?? 4.2,
+        sodium: (historicalData as any)?.sodium ?? (historicalData as any)?.Sodium ?? 140.0,
+        hr: (historicalData as any)?.hr ?? (historicalData as any)?.HR ?? 72.0,
+        sbp: (historicalData as any)?.sbp ?? (historicalData as any)?.SBP ?? 120.0,
+        dbp: (historicalData as any)?.dbp ?? (historicalData as any)?.DBP ?? 80.0,
+        rr: (historicalData as any)?.rr ?? (historicalData as any)?.RR ?? 14.0,
+        o2: (historicalData as any)?.o2 ?? (historicalData as any)?.O2 ?? 99.0
       };
 
       const isEcgOnly = sessionId === null && ecgSessionId !== null;

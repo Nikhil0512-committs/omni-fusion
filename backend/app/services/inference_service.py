@@ -215,6 +215,60 @@ class InferenceService:
             sv = sv[0]
             
         shap_dict = {self.feature_names[i]: float(sv[i]) for i in range(len(self.feature_names))}
+        
+        # CLINICAL RULE EVALUATOR & RISK CALIBRATION ENGINE
+        # Elevate risk score dynamically if extracted ECG abnormalities or lab vitals indicate critical pathology
+        clinical_risk_floor = 0.0
+
+        # 1. Evaluate extracted ECG clinical text
+        ecg_text = (req.ecg_abnormality or "").lower()
+        critical_ecg_terms = [
+            "stemi", "st-elevation", "myocardial infarction", "infarct", 
+            "ventricular tachycardia", "v-tach", "v-fib", "complete heart block",
+            "severe hyperkalemia", "acute coronary syndrome"
+        ]
+        moderate_ecg_terms = [
+            "tachycardia", "av block", "prolonged qtc", "st depression",
+            "lbbb", "rbbb", "atrial fibrillation", "afib", "pvcs",
+            "hyperkalemia", "hypokalemia", "axis deviation", "ischemia"
+        ]
+
+        if any(term in ecg_text for term in critical_ecg_terms):
+            clinical_risk_floor = max(clinical_risk_floor, 0.88)
+        elif any(term in ecg_text for term in moderate_ecg_terms):
+            clinical_risk_floor = max(clinical_risk_floor, 0.62)
+
+        # 2. Evaluate extracted Blood & Vital Biomarkers
+        if req.vitals:
+            v = req.vitals
+            if v.creatinine and v.creatinine > 2.0:
+                clinical_risk_floor = max(clinical_risk_floor, 0.65 if v.creatinine < 3.5 else 0.85)
+                shap_dict["Vital_Creatinine"] = max(shap_dict.get("Vital_Creatinine", 0.0), 0.15)
+
+            if v.potassium and (v.potassium > 5.5 or v.potassium < 3.0):
+                clinical_risk_floor = max(clinical_risk_floor, 0.70)
+                shap_dict["Vital_Potassium"] = max(shap_dict.get("Vital_Potassium", 0.0), 0.18)
+
+            if v.glucose and (v.glucose > 250.0 or v.glucose < 50.0):
+                clinical_risk_floor = max(clinical_risk_floor, 0.55)
+                shap_dict["Vital_Glucose"] = max(shap_dict.get("Vital_Glucose", 0.0), 0.12)
+
+            if v.hr and (v.hr > 115.0 or v.hr < 45.0):
+                clinical_risk_floor = max(clinical_risk_floor, 0.50)
+                shap_dict["Vital_HR"] = max(shap_dict.get("Vital_HR", 0.0), 0.10)
+
+            if v.sbp and (v.sbp > 180.0 or v.sbp < 85.0):
+                clinical_risk_floor = max(clinical_risk_floor, 0.60)
+                shap_dict["Vital_SBP"] = max(shap_dict.get("Vital_SBP", 0.0), 0.14)
+
+            if v.o2 and v.o2 < 90.0:
+                clinical_risk_floor = max(clinical_risk_floor, 0.75)
+                shap_dict["Vital_O2"] = max(shap_dict.get("Vital_O2", 0.0), 0.20)
+
+        # Apply clinical risk floor calibration
+        prob = float(max(prob, clinical_risk_floor))
+        prob = float(min(prob, 0.985))
+
         import gc
         gc.collect()
 
