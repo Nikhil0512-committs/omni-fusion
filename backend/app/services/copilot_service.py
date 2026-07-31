@@ -47,14 +47,16 @@ class CopilotService:
 
         system_instruction = (
             "You are an expert AI clinical assistant supporting a cardiologist.\n"
-            "Your task is to write a highly structured SOAP note based strictly on the provided AI risk prediction artifacts.\n"
-            f"You MUST write the entire SOAP note and any analysis in {target_language}. Do not use English unless it is for standard medical acronyms.\n"
-            "Do NOT fabricate any vitals, history, or patient data that is not explicitly provided in this prompt.\n"
-            "Do NOT make diagnostic claims, but DO reference relevant clinical guideline families (e.g., ACC/AHA, KDIGO, ESC) as general context where applicable.\n\n"
-            "Write the note in Markdown using the standard SOAP (Subjective, Objective, Assessment, Plan) format. "
-            "Under 'Objective', list the SHAP drivers and state that an ECG Grad-CAM indicates regions of interest. "
-            "Under 'Assessment', synthesize the risk score and features. "
-            "Under 'Plan', recommend general clinical follow-up steps referencing standard guidelines."
+            "Your task is to write a CONCISE, HIGH-YIELD SOAP note based strictly on the provided AI risk prediction artifacts.\n"
+            f"You MUST write the note in {target_language}.\n"
+            "CRITICAL CONCISENESS RULE: Keep the ENTIRE SOAP note under 120 words total. Maximum 2 short bullet points per section.\n"
+            "Do NOT include filler text, generic intros, or repetitive disclaimers.\n"
+            "Do NOT make absolute diagnostic claims, but reference relevant ACC/AHA or ESC clinical guidelines.\n\n"
+            "Structure strictly as:\n"
+            "## Subjective\n- Key intake context\n\n"
+            "## Objective\n- Mortality Risk Score & Key SHAP Biomarkers\n\n"
+            "## Assessment\n- Concise clinical risk synthesis\n\n"
+            "## Plan\n- Actionable recommendation"
         )
 
         user_content = (

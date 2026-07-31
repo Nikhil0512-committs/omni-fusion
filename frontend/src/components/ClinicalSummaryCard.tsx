@@ -192,39 +192,39 @@ export const ClinicalSummaryCard: React.FC<ClinicalSummaryCardProps> = ({ predic
 
   const parsedSections = parseSoapSections(summary);
   const sectionColors = {
-    subjective: { border: 'border-blue-800/50', bg: 'bg-blue-950/20', text: 'text-blue-400', icon: Stethoscope },
-    objective: { border: 'border-emerald-800/50', bg: 'bg-emerald-950/20', text: 'text-emerald-400', icon: Activity },
-    assessment: { border: 'border-amber-800/50', bg: 'bg-amber-950/20', text: 'text-amber-400', icon: ShieldCheck },
-    plan: { border: 'border-purple-800/50', bg: 'bg-purple-950/20', text: 'text-purple-400', icon: FileText }
+    subjective: { border: 'border-sky-800/40', bg: 'bg-sky-950/30', text: 'text-sky-300', icon: Stethoscope },
+    objective: { border: 'border-emerald-800/40', bg: 'bg-emerald-950/30', text: 'text-emerald-300', icon: Activity },
+    assessment: { border: 'border-amber-800/40', bg: 'bg-amber-950/30', text: 'text-amber-300', icon: ShieldCheck },
+    plan: { border: 'border-purple-800/40', bg: 'bg-purple-950/30', text: 'text-purple-300', icon: FileText }
   };
 
   return (
-    <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl mt-6 space-y-6">
+    <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl mt-6 space-y-5">
       {/* Top Bar Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800/80 gap-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-md">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-slate-100">AI Clinical Summary (SOAP)</h3>
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Gemini AI Verified
+              <h3 className="text-lg font-bold text-white tracking-tight">AI Clinical Summary (SOAP)</h3>
+              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                Concise High-Yield Note
               </span>
             </div>
-            <p className="text-xs text-slate-400">Automated clinical documentation & risk synthesis note.</p>
+            <p className="text-xs text-slate-400 mt-0.5">Automated clinical documentation & guideline-backed synthesis.</p>
           </div>
         </div>
 
         <button
           onClick={handleCopy}
-          className="flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-750 text-slate-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-md active:scale-95 shrink-0"
+          className="flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm active:scale-95 shrink-0"
         >
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-emerald-400">Copied to Clipboard!</span>
+              <span className="text-emerald-400 font-bold">Copied!</span>
             </>
           ) : (
             <>
@@ -242,18 +242,18 @@ export const ClinicalSummaryCard: React.FC<ClinicalSummaryCardProps> = ({ predic
             const config = sectionColors[sec.key] || sectionColors.subjective;
             const IconComp = config.icon;
             return (
-              <div key={sec.key} className={`rounded-xl border ${config.border} ${config.bg} p-4 flex flex-col space-y-2`}>
-                <div className="flex items-center space-x-2 border-b border-slate-800/60 pb-2">
-                  <IconComp className={`w-4 h-4 ${config.text}`} />
+              <div key={sec.key} className={`rounded-xl border ${config.border} ${config.bg} p-4 flex flex-col space-y-2.5 shadow-sm`}>
+                <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-2">
+                  <IconComp className={`w-4 h-4 ${config.text} shrink-0`} />
                   <h4 className={`text-xs font-bold uppercase tracking-wider ${config.text}`}>
                     {sec.title}
                   </h4>
                 </div>
-                <ul className="space-y-1.5 pt-1">
+                <ul className="space-y-2 pt-0.5">
                   {sec.items.map((item, i) => (
-                    <li key={i} className="text-xs text-slate-300 leading-relaxed list-none flex items-start gap-2">
-                      <span className={`w-1.5 h-1.5 rounded-full ${config.text} shrink-0 mt-1.5 bg-current`} />
-                      <span>{parseMarkdownText(item)}</span>
+                    <li key={i} className="text-xs text-slate-200 leading-relaxed font-normal flex items-start gap-2">
+                      <span className={`w-1.5 h-1.5 rounded-full ${config.text} shrink-0 mt-1.5 bg-current opacity-90`} />
+                      <span className="flex-1">{parseMarkdownText(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -263,7 +263,7 @@ export const ClinicalSummaryCard: React.FC<ClinicalSummaryCardProps> = ({ predic
         </div>
       ) : (
         /* Fallback rich formatted text box if unstructured */
-        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-2">
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-5 space-y-2 text-slate-200">
           {parseMarkdownText(summary)}
         </div>
       )}
