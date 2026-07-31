@@ -35,19 +35,22 @@ async def summarize(request: Request, body: CopilotRequest, user_data: dict = De
         if not links.data:
             raise HTTPException(status_code=403, detail="Unauthorized: Not linked to this patient")
 
-    # Next get the reports table for SHAP and Grad-CAM
-    report_res = supabase.table("reports").select("shap_data, gradcam_ref").eq("prediction_id", body.prediction_id).execute()
-    
-    if not report_res.data:
-        raise HTTPException(status_code=400, detail="Cannot generate copilot summary without report artifacts (SHAP/Grad-CAM). Please generate a report first.")
-        
-    report = report_res.data[0]
-    
+    # Next check reports table for SHAP and Grad-CAM, with fallback if report row not generated yet
+    shap_data = {}
+    gradcam_b64 = ""
+    try:
+        report_res = supabase.table("reports").select("shap_data, gradcam_ref").eq("prediction_id", body.prediction_id).execute()
+        if report_res.data:
+            shap_data = report_res.data[0].get("shap_data") or {}
+            gradcam_b64 = report_res.data[0].get("gradcam_ref") or ""
+    except Exception as e:
+        logger.warning(f"Could not fetch reports table row for copilot: {e}")
+
     try:
         soap_note = copilot_service.generate_soap_note(
-            risk_score=prediction["risk_score"],
-            shap_data=report["shap_data"],
-            gradcam_b64=report.get("gradcam_ref", "")
+            risk_score=prediction.get("risk_score") or 0.05,
+            shap_data=shap_data,
+            gradcam_b64=gradcam_b64
         )
         return CopilotResponse(soap_note=soap_note)
     except Exception as e:

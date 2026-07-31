@@ -17,35 +17,47 @@ interface ShapWaterfallProps {
 }
 
 function formatLabel(key: string): string {
-  let formatted = key.replace(/^(Vital_|vital_|Hist_|hist_)/i, '');
-  formatted = formatted.replace(/_/g, ' ');
-  const acronyms = ['hr', 'sbp', 'dbp', 'rr', 'o2'];
-  return formatted.split(' ').map(word => {
-    if (acronyms.includes(word.toLowerCase())) {
-      return word.toUpperCase();
-    }
-    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-  }).join(' ');
+  let cleanKey = key.replace(/^(Vital_|vital_|Hist_|hist_)/i, '').trim();
+  const labelMap: Record<string, string> = {
+    'creatinine': 'Serum Creatinine',
+    'glucose': 'Blood Glucose',
+    'potassium': 'Serum Potassium',
+    'sodium': 'Serum Sodium',
+    'hr': 'Heart Rate (HR)',
+    'sbp': 'Systolic BP (SBP)',
+    'dbp': 'Diastolic BP (DBP)',
+    'rr': 'Respiratory Rate (RR)',
+    'o2': 'Oxygen Saturation (O2)',
+    'anchor_age': 'Age',
+    'gender': 'Gender'
+  };
+
+  const keyLower = cleanKey.toLowerCase();
+  if (labelMap[keyLower]) return labelMap[keyLower];
+
+  cleanKey = cleanKey.replace(/_/g, ' ');
+  return cleanKey.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 }
 
 export default function ShapWaterfall({ shapData, extractedFields }: ShapWaterfallProps) {
-  // Convert dict to sorted array
-  const reportBiomarkers = ['creatinine', 'glucose', 'potassium', 'sodium', 'anchor_age', 'gender'];
-  
-  const data = Object.entries(shapData)
-    .map(([name, value]) => {
-      const clean = formatLabel(name);
-      const isReportMetric = reportBiomarkers.some(b => name.toLowerCase().includes(b)) || 
-        (extractedFields && extractedFields.some(f => name.toLowerCase().includes(f.toLowerCase())));
-      return { name: clean, value, rawName: name, isReportMetric };
-    })
-    .sort((a, b) => {
-      // Prioritize extracted lab biomarkers
-      if (a.isReportMetric && !b.isReportMetric) return -1;
-      if (!a.isReportMetric && b.isReportMetric) return 1;
-      return Math.abs(b.value) - Math.abs(a.value);
-    })
-    .slice(0, 10);
+  const map = new Map<string, { name: string; value: number; rawName: string }>();
+
+  Object.entries(shapData).forEach(([name, value]) => {
+    if (typeof value !== 'number' || isNaN(value) || Math.abs(value) < 0.0005) return;
+
+    const clean = formatLabel(name);
+    if (clean.toLowerCase().includes('offline')) return;
+
+    // Keep feature with highest absolute impact magnitude for each unique formatted label
+    const existing = map.get(clean);
+    if (!existing || Math.abs(value) > Math.abs(existing.value)) {
+      map.set(clean, { name: clean, value, rawName: name });
+    }
+  });
+
+  const data = Array.from(map.values())
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+    .slice(0, 6);
 
   return (
     <div className="w-full h-[320px] bg-slate-900 rounded-lg p-4 border border-slate-800 flex flex-col">

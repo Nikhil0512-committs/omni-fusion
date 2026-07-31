@@ -148,13 +148,21 @@ export default function DetailedReportPage() {
     'creatinine', 'glucose', 'potassium', 'sodium', 'hr'
   ]);
 
-  const shapEntries: [string, number][] = hasRealShap
-    ? Object.entries(rawShap)
-        .filter(([key, val]) => typeof val === 'number' && !isNaN(val))
-        .filter(([key]) => !key.startsWith('Hist_'))  // Skip historical duplicates
-        .map(([key, val]) => [formatFeatureLabel(key), val as number] as [string, number])
-        .filter(([label]) => BLOOD_REPORT_FEATURES.has(label.toLowerCase()))
-        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+  const shapMap = new Map<string, number>();
+  if (hasRealShap) {
+    Object.entries(rawShap).forEach(([key, val]) => {
+      if (typeof val !== 'number' || isNaN(val) || Math.abs(val) < 0.0005) return;
+      const label = formatFeatureLabel(key);
+      if (label.toLowerCase().includes('offline')) return;
+      const existing = shapMap.get(label);
+      if (existing === undefined || Math.abs(val) > Math.abs(existing)) {
+        shapMap.set(label, val);
+      }
+    });
+  }
+
+  const shapEntries: [string, number][] = shapMap.size > 0
+    ? Array.from(shapMap.entries()).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6)
     : [
         ["Serum Creatinine", -0.0312],
         ["Blood Glucose", -0.0206],

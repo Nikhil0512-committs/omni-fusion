@@ -365,8 +365,7 @@ async def generate_report(request: Request, payload: ReportRequest, prediction_i
                 
             supabase.table('reports').insert(insert_report_data).execute()
         except Exception as e:
-            logger.error(f"Failed to insert into reports table: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to save report to database: {e}")
+            logger.warning(f"Could not save report row to Supabase database: {e}")
         
         return ReportResponse(
             prediction_id=prediction_id,

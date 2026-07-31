@@ -328,11 +328,19 @@ export default function Dashboard() {
 
                     {activeEcgTab === 'uploaded' ? (
                       <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center">
-                        <img 
-                          src={ecgPreviewUrl} 
-                          alt="User Uploaded ECG" 
-                          className="w-full h-full object-contain" 
-                        />
+                        {ecgPreviewUrl.toLowerCase().endsWith('.pdf') || ecgPreviewUrl.startsWith('blob:') ? (
+                          <iframe 
+                            src={ecgPreviewUrl} 
+                            title="User Uploaded ECG Document" 
+                            className="w-full h-full border-none rounded-lg"
+                          />
+                        ) : (
+                          <img 
+                            src={ecgPreviewUrl} 
+                            alt="User Uploaded ECG" 
+                            className="w-full h-full object-contain" 
+                          />
+                        )}
                       </div>
                     ) : prediction.rawEcg && prediction.ecgGradcamData ? (
                       <InteractiveEcgViewer 
