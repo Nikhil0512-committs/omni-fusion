@@ -48,11 +48,21 @@ async def predict(request: Request, payload: PredictRequest, user_data: dict = D
             )
         else:
             prediction = await run_in_threadpool(inference_service.predict, payload)
-            if payload.ecg_abnormality:
-                prediction.ecg_abnormality = payload.ecg_abnormality
-            if payload.ecg_image_path or payload.ecg_abnormality:
+            has_ecg_upload = bool(payload.ecg_image_path or payload.ecg_abnormality)
+            if has_ecg_upload:
+                if payload.ecg_abnormality:
+                    prediction.ecg_abnormality = payload.ecg_abnormality
                 if not any("ecg" in s.lower() for s in prediction.streams_used):
                     prediction.streams_used.append("12-Lead ECG")
+            else:
+                # User did not upload an ECG. Omit ECG streams and conclusions completely!
+                prediction.streams_used = [s for s in prediction.streams_used if "ecg" not in s.lower()]
+                if not prediction.streams_used:
+                    prediction.streams_used = ["vitals"]
+                prediction.ecg_abnormality = None
+                prediction.ecg_gradcam_heatmap_b64 = None
+                prediction.ecg_gradcam_data = None
+                prediction.raw_ecg = None
                 
         prediction_id = str(uuid.uuid4())
         prediction.prediction_id = prediction_id

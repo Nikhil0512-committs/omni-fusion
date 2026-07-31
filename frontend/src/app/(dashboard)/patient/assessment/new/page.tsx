@@ -268,7 +268,7 @@ export default function Dashboard() {
                 </div>
               )}
               
-              {prediction.ecgAbnormality && (
+              {ecgSessionId && prediction.ecgAbnormality && (
                 <div className="w-full bg-red-900/20 border border-red-800 rounded-lg p-4 mb-4">
                   <h3 className="text-red-400 font-semibold mb-1 text-sm flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" /> ECG Findings Extracted
@@ -290,74 +290,65 @@ export default function Dashboard() {
 
             {/* Right Viewport */}
             <div className="flex flex-col space-y-4">
-              {ecgPreviewUrl ? (
-                <div className="w-full bg-slate-900 rounded-xl p-5 border border-slate-800 flex flex-col gap-4 shadow-xl">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => setActiveEcgTab('uploaded')}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                          activeEcgTab === 'uploaded' 
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        Uploaded ECG Image
-                      </button>
-                      {prediction.rawEcg && (
+              {(ecgSessionId || ecgPreviewUrl) && (
+                ecgPreviewUrl ? (
+                  <div className="w-full bg-slate-900 rounded-xl p-5 border border-slate-800 flex flex-col gap-4 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
                         <button 
-                          onClick={() => setActiveEcgTab('interactive')}
+                          onClick={() => setActiveEcgTab('uploaded')}
                           className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                            activeEcgTab === 'interactive' 
+                            activeEcgTab === 'uploaded' 
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                               : 'text-slate-400 hover:text-slate-200'
                           }`}
                         >
-                          Interactive Waveforms
+                          Uploaded ECG Image
                         </button>
-                      )}
+                        {prediction.rawEcg && (
+                          <button 
+                            onClick={() => setActiveEcgTab('interactive')}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                              activeEcgTab === 'interactive' 
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            Interactive Waveforms
+                          </button>
+                        )}
+                      </div>
+                      <a 
+                        href={ecgPreviewUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" /> View Original
+                      </a>
                     </div>
-                    <a 
-                      href={ecgPreviewUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" /> View Original
-                    </a>
-                  </div>
 
-                  {activeEcgTab === 'uploaded' ? (
-                    <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center">
-                      <img 
-                        src={ecgPreviewUrl} 
-                        alt="User Uploaded ECG" 
-                        className="w-full h-full object-contain" 
+                    {activeEcgTab === 'uploaded' ? (
+                      <div className="relative w-full h-[320px] rounded-lg overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center">
+                        <img 
+                          src={ecgPreviewUrl} 
+                          alt="User Uploaded ECG" 
+                          className="w-full h-full object-contain" 
+                        />
+                      </div>
+                    ) : prediction.rawEcg && prediction.ecgGradcamData ? (
+                      <InteractiveEcgViewer 
+                        rawEcg={prediction.rawEcg}
+                        gradCam={prediction.ecgGradcamData}
                       />
-                    </div>
-                  ) : prediction.rawEcg && prediction.ecgGradcamData ? (
-                    <InteractiveEcgViewer 
-                      rawEcg={prediction.rawEcg}
-                      gradCam={prediction.ecgGradcamData}
-                    />
-                  ) : null}
-                </div>
-              ) : prediction.rawEcg && prediction.ecgGradcamData ? (
-                <InteractiveEcgViewer 
-                  rawEcg={prediction.rawEcg}
-                  gradCam={prediction.ecgGradcamData}
-                />
-              ) : (
-                <div className="w-full bg-slate-900 rounded-lg p-4 border border-slate-800">
-                  <h3 className="text-slate-300 font-semibold mb-4 text-sm">ECG Grad-CAM Thermal Overlay</h3>
-                  <div className="w-full h-[250px] flex items-center justify-center bg-obsidian rounded overflow-hidden">
-                    <img 
-                      src={`data:image/png;base64,${prediction.ecgGradcamHeatmapB64}`} 
-                      alt="ECG Heatmap" 
-                      className="w-full h-full object-contain"
-                    />
+                    ) : null}
                   </div>
-                </div>
+                ) : (prediction.rawEcg && prediction.ecgGradcamData ? (
+                  <InteractiveEcgViewer 
+                    rawEcg={prediction.rawEcg}
+                    gradCam={prediction.ecgGradcamData}
+                  />
+                ) : null)
               )}
               
               <div className="w-full bg-slate-900 rounded-lg p-4 border border-slate-800">
