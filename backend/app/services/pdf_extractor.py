@@ -1,19 +1,43 @@
-import fitz  # PyMuPDF
 import re
+import io
 import logging
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
+try:
+    import fitz  # PyMuPDF
+except ImportError:
+    fitz = None
+
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
+
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
-    """Extract raw text from a PDF document using PyMuPDF."""
+    """Extract raw text from a PDF document using PyMuPDF or PyPDF fallback."""
     text_content = ""
-    try:
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        for page in doc:
-            text_content += page.get_text("text") + "\n"
-    except Exception as e:
-        logger.warning(f"PyMuPDF text extraction failed: {e}")
+    if fitz is not None:
+        try:
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            for page in doc:
+                text_content += page.get_text("text") + "\n"
+            if text_content.strip():
+                return text_content.strip()
+        except Exception as e:
+            logger.warning(f"PyMuPDF text extraction failed: {e}")
+
+    if pypdf is not None:
+        try:
+            reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+            for page in reader.pages:
+                text_content += (page.extract_text() or "") + "\n"
+            if text_content.strip():
+                return text_content.strip()
+        except Exception as e:
+            logger.warning(f"pypdf text extraction failed: {e}")
+
     return text_content.strip()
 
 def parse_lab_values_from_text(raw_text: str) -> Dict[str, Any]:
