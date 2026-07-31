@@ -99,7 +99,6 @@ async def predict(request: Request, payload: PredictRequest, user_data: dict = D
         try:
             insert_data = {
                 "id": prediction_id,
-                "upload_session_id": valid_upload_session_id,
                 "risk_score": db_risk_score,
                 "streams_used": prediction.streams_used,
                 "raw_input_ref": raw_input_ref,
