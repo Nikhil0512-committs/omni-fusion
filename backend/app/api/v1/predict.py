@@ -106,8 +106,6 @@ async def predict(request: Request, payload: PredictRequest, user_data: dict = D
             }
             if patient_id:
                 insert_data["patient_id"] = patient_id
-            if doctor_id:
-                insert_data["doctor_id"] = doctor_id
 
             supabase.table("predictions").insert(insert_data).execute()
             logger.info(f"Successfully persisted prediction {prediction_id} for patient {patient_id}")

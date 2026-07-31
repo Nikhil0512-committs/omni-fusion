@@ -121,31 +121,31 @@ export default function PatientReports() {
       {/* Stats Bar */}
       {totalReports > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-400" />
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-blue-400" />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Total Reports</p>
-              <p className="text-lg font-bold text-blue-400">{totalReports}</p>
+              <p className="text-sm font-semibold text-slate-300">Total Reports</p>
+              <p className="text-2xl font-bold text-white">{totalReports}</p>
             </div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-emerald-400" />
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+              <Shield className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Avg Risk</p>
-              <p className={`text-lg font-bold ${getRiskColor(avgRisk)}`}>{(avgRisk * 100).toFixed(1)}%</p>
+              <p className="text-sm font-semibold text-slate-300">Avg Risk</p>
+              <p className={`text-2xl font-bold ${getRiskColor(avgRisk)}`}>{(avgRisk * 100).toFixed(1)}%</p>
             </div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-red-400" />
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>High Risk</p>
-              <p className="text-lg font-bold text-red-400">{highRiskCount}</p>
+              <p className="text-sm font-semibold text-slate-300">High Risk</p>
+              <p className="text-2xl font-bold text-red-400">{highRiskCount}</p>
             </div>
           </div>
         </div>
