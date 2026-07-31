@@ -8,7 +8,7 @@ import type { StoredPrediction } from '@/lib/types'
 import Link from 'next/link'
 
 export default function PatientReports() {
-  const { profile } = useAuth()
+  const { user, profile, loading: authLoading } = useAuth()
   const [reports, setReports] = useState<StoredPrediction[]>([])
   const [loading, setLoading] = useState(true)
   const [errorStr, setErrorStr] = useState<string | null>(null)
@@ -16,18 +16,23 @@ export default function PatientReports() {
 
   useEffect(() => {
     async function fetchReports() {
-      if (!profile) return
+      if (authLoading) return
+      if (!user && !profile) {
+        setLoading(false)
+        return
+      }
       try {
         const predictions = await api.getMyReports()
         setReports(predictions)
-      } catch {
+      } catch (err: any) {
+        console.error("Failed to load reports:", err)
         setErrorStr("Reports could not be loaded right now. Please check your connection and try again.")
       } finally {
         setLoading(false)
       }
     }
     fetchReports()
-  }, [profile])
+  }, [user, profile, authLoading])
 
   const downloadReport = async (predictionId: string, url?: string) => {
     setPreparingId(predictionId)

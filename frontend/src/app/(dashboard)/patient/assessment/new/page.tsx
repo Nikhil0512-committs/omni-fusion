@@ -16,7 +16,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { runOfflineInference, syncOfflinePredictions } from '@/lib/offlineInference';
 
 export default function Dashboard() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [ecgSessionId, setEcgSessionId] = useState<string | null>(null);
   const [ecgAbnormality, setEcgAbnormality] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export default function Dashboard() {
       const isEcgOnly = sessionId === null && ecgSessionId !== null;
 
       const payload: PredictRequest = {
-        patientId: profile?.id || "",
+        patientId: profile?.id || user?.id || "",
         ecg: ecgData,
         vitals: dummyVitals,
         historical: historicalData || undefined,
@@ -111,16 +111,20 @@ export default function Dashboard() {
         // Attempt online prediction
         pred = await api.runClinicalInference(payload);
         
-        // Instantly generate report
-        const rep = await api.generateReport(pred.predictionId, {
-          patientId: payload.patientId,
-          shapData: pred.shapData,
-          ecgGradcamHeatmapB64: pred.ecgGradcamHeatmapB64 || "",
-          failureAnalysisSummary: pred.failureAnalysisSummary,
-          ecgGradcamData: pred.ecgGradcamData,
-          rawEcg: pred.rawEcg
-        });
-        setReport(rep);
+        // Attempt instant report generation independently
+        try {
+          const rep = await api.generateReport(pred.predictionId, {
+            patientId: payload.patientId,
+            shapData: pred.shapData,
+            ecgGradcamHeatmapB64: pred.ecgGradcamHeatmapB64 || "",
+            failureAnalysisSummary: pred.failureAnalysisSummary,
+            ecgGradcamData: pred.ecgGradcamData,
+            rawEcg: pred.rawEcg
+          });
+          setReport(rep);
+        } catch (repErr) {
+          console.warn("Report generation notice:", repErr);
+        }
       } catch (onlineErr) {
         console.warn("Online inference failed, trying offline:", onlineErr);
         // Fall back to offline inference if API is unreachable
