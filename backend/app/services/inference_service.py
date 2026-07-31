@@ -32,6 +32,39 @@ from app.models.schemas import PredictRequest, PredictResponse
 
 device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
+def get_vital_val(obj, key: str) -> float:
+    if obj is None:
+        return 0.0
+    val = getattr(obj, key, None)
+    if val is not None:
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            pass
+    
+    key_lower = key.lower()
+    mapping = {
+        'creatinine': ['creatinine', 'Creatinine'],
+        'glucose': ['glucose', 'Glucose'],
+        'potassium': ['potassium', 'Potassium'],
+        'sodium': ['sodium', 'Sodium'],
+        'hr': ['hr', 'HR', 'heart_rate', 'heartRate'],
+        'sbp': ['sbp', 'SBP', 'systolic_bp', 'systolicBp'],
+        'dbp': ['dbp', 'DBP', 'diastolic_bp', 'diastolicBp'],
+        'rr': ['rr', 'RR', 'resp_rate', 'respRate'],
+        'o2': ['o2', 'O2', 'spo2', 'oxygen'],
+        'anchor_age': ['anchor_age', 'anchorAge', 'age'],
+        'gender': ['gender', 'sex']
+    }
+    for alt in mapping.get(key_lower, [key_lower]):
+        alt_val = getattr(obj, alt, None)
+        if alt_val is not None:
+            try:
+                return float(alt_val)
+            except (ValueError, TypeError):
+                pass
+    return 0.0
+
 class InferenceService:
     """Singleton inference facade around the validated Omni-Fusion checkpoint."""
     _instance = None
@@ -145,7 +178,7 @@ class InferenceService:
             A response whose ``risk_score`` is the softmax probability of
             ``hospital_expire_flag`` (class 1), plus SHAP and ECG Grad-CAM data.
         """
-        vitals_arr_raw = np.array([[getattr(req.vitals, c) for c in self.scaler_feature_order]], dtype=np.float32)
+        vitals_arr_raw = np.array([[get_vital_val(req.vitals, c) for c in self.scaler_feature_order]], dtype=np.float32)
         
         # Scale vitals
         vitals_arr = self.vitals_scaler.transform(vitals_arr_raw).astype(np.float32)
@@ -158,7 +191,7 @@ class InferenceService:
         vitals_arr = np.clip(vitals_arr, -3.0, 3.0)
         
         if req.historical:
-            hist_arr_raw = np.array([[getattr(req.historical, c) for c in self.scaler_feature_order]], dtype=np.float32)
+            hist_arr_raw = np.array([[get_vital_val(req.historical, c) for c in self.scaler_feature_order]], dtype=np.float32)
             hist_arr = self.vitals_scaler.transform(hist_arr_raw).astype(np.float32)
             if np.any(np.abs(hist_arr) > 8):
                 print(f"Warning: Transformed historical vitals have extreme values (> 8 standard deviations): {hist_arr}")
