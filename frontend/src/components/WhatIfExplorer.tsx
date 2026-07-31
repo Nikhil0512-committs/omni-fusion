@@ -9,14 +9,27 @@ interface WhatIfExplorerProps {
   originalPrediction: PredictResponse;
 }
 
-const VITAL_RANGES = {
-  hr: { min: 40, max: 200, step: 1, label: 'Heart Rate (bpm)' },
+const VITAL_RANGES: Record<string, { min: number; max: number; step: number; label: string; isDecimal?: boolean }> = {
+  o2: { min: 70, max: 100, step: 1, label: 'O2 Saturation (%)' },
   sbp: { min: 70, max: 250, step: 1, label: 'Systolic BP (mmHg)' },
   dbp: { min: 40, max: 150, step: 1, label: 'Diastolic BP (mmHg)' },
-  rr: { min: 8, max: 40, step: 1, label: 'Resp Rate (bpm)' },
-  o2: { min: 70, max: 100, step: 1, label: 'O2 Saturation (%)' },
-  glucose: { min: 50, max: 400, step: 1, label: 'Glucose (mg/dL)' },
+  hr: { min: 40, max: 200, step: 1, label: 'Heart Rate (bpm)' },
+  glucose: { min: 50, max: 500, step: 5, label: 'Blood Glucose (mg/dL)' },
+  potassium: { min: 2.0, max: 8.0, step: 0.1, label: 'Serum Potassium (mEq/L)', isDecimal: true },
+  creatinine: { min: 0.4, max: 8.0, step: 0.1, label: 'Serum Creatinine (mg/dL)', isDecimal: true },
 };
+
+function getBaseVitalValue(vitals: any, key: string): number {
+  if (!vitals) return 0;
+  const lower = key.toLowerCase();
+  for (const k of Object.keys(vitals)) {
+    if (k.toLowerCase() === lower) {
+      const val = Number(vitals[k]);
+      return isNaN(val) ? 0 : val;
+    }
+  }
+  return 0;
+}
 
 export const WhatIfExplorer: React.FC<WhatIfExplorerProps> = ({ baseRequest, originalPrediction }) => {
   const [overrides, setOverrides] = useState<Record<string, number>>({});
@@ -66,32 +79,32 @@ export const WhatIfExplorer: React.FC<WhatIfExplorerProps> = ({ baseRequest, ori
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold text-slate-100 flex items-center">
           <Activity className="w-5 h-5 mr-2 text-blue-400" />
-          Counterfactual Explorer
+          Counterfactual Risk Simulator (What-If Explorer)
         </h3>
         {Object.keys(overrides).length > 0 && (
           <button
             onClick={resetOverrides}
-            className="flex items-center text-sm text-slate-400 hover:text-slate-200 transition-colors"
+            className="flex items-center text-sm text-slate-400 hover:text-slate-200 transition-colors bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg"
           >
             <RefreshCw className="w-4 h-4 mr-1" />
-            Reset
+            Reset Parameters
           </button>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Sliders */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {Object.entries(VITAL_RANGES).map(([key, config]) => {
-            const baseValue = baseRequest.vitals ? baseRequest.vitals[key as keyof typeof baseRequest.vitals] : 0;
-            const currentValue = overrides[key] !== undefined ? overrides[key] : baseValue;
+            const baseValue = getBaseVitalValue(baseRequest.vitals, key);
+            const currentValue = overrides[key] !== undefined ? overrides[key] : (baseValue > 0 ? baseValue : (config.min + config.max) / 2);
             
             return (
               <div key={key}>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-medium text-slate-300">{config.label}</label>
-                  <span className={`text-sm font-mono ${overrides[key] !== undefined ? 'text-blue-400 font-bold' : 'text-slate-500'}`}>
-                    {Number(currentValue).toFixed(0)}
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-300">{config.label}</label>
+                  <span className={`text-sm font-mono ${overrides[key] !== undefined ? 'text-emerald-400 font-bold' : 'text-slate-400'}`}>
+                    {config.isDecimal ? Number(currentValue).toFixed(1) : Number(currentValue).toFixed(0)}
                   </span>
                 </div>
                 <input
@@ -101,7 +114,7 @@ export const WhatIfExplorer: React.FC<WhatIfExplorerProps> = ({ baseRequest, ori
                   step={config.step}
                   value={currentValue}
                   onChange={(e) => handleSliderChange(key, parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
               </div>
             );

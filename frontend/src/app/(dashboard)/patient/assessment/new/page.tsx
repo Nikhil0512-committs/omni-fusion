@@ -269,7 +269,7 @@ export default function Dashboard() {
                   <h3 className="text-red-400 font-semibold mb-1 text-sm flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" /> ECG Findings Extracted
                   </h3>
-                  <p className="text-red-200/80 text-sm">
+                  <p className="text-white font-medium text-sm leading-relaxed">
                     {prediction.ecgAbnormality}
                   </p>
                   <p className="text-red-300 text-xs mt-2 font-medium">Please consult a doctor for further evaluation.</p>
@@ -321,8 +321,8 @@ export default function Dashboard() {
               )}
               
               <div className="w-full bg-slate-900 rounded-lg p-4 border border-slate-800">
-                <h3 className="text-slate-300 font-semibold mb-2 text-sm">Automated Analysis Summary</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
+                <h3 className="text-emerald-400 font-bold mb-2 text-sm">Automated Analysis Summary</h3>
+                <p className="text-white font-medium text-sm leading-relaxed">
                   {prediction.failureAnalysisSummary}
                 </p>
               </div>

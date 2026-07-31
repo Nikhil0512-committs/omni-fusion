@@ -166,9 +166,12 @@ async def counterfactual_predict(request: Request, payload: PredictCounterfactua
         base_req = payload.base_request
         # Apply overrides
         vitals_dict = base_req.vitals.model_dump()
+        # Case-insensitive mapping dictionary to match schema fields
+        key_map = {key.lower(): key for key in vitals_dict.keys()}
         for k, v in payload.overrides.items():
-            if k in vitals_dict:
-                vitals_dict[k] = v
+            k_lower = k.lower()
+            if k_lower in key_map:
+                vitals_dict[key_map[k_lower]] = float(v)
         
         # We need to construct a new PredictRequest with the overridden vitals.
         # But we must update the vitals object
