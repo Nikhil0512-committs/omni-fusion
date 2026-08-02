@@ -22,8 +22,24 @@ async def get_patient_record(patient_id: str, user_data: dict = Depends(require_
     if not link.data:
         raise HTTPException(status_code=403, detail="You are not connected to this patient")
     profile = supabase.table("profiles").select("*").eq("id", patient_id).single().execute()
-    predictions = supabase.table("predictions").select("id,created_at,risk_score,streams_used,doctor_reviewed,reports(id,created_at,pdf_storage_path,gradcam_ref,shap_data,failure_analysis_text),doctor_notes(id,note,priority,created_at)").eq("patient_id", patient_id).order("created_at", desc=True).execute()
+    predictions = supabase.table("predictions").select("id,created_at,risk_score,streams_used,doctor_reviewed,raw_input_ref,reports(id,created_at,pdf_storage_path,gradcam_ref,shap_data,failure_analysis_text),doctor_notes(id,note,priority,created_at)").eq("patient_id", patient_id).order("created_at", desc=True).execute()
     for prediction in predictions.data or []:
+        raw_input = prediction.get("raw_input_ref") or {}
+        
+        if raw_input.get("blood_image_path"):
+            try:
+                signed = supabase.storage.from_("reports").create_signed_url(raw_input.get("blood_image_path"), 3600)
+                prediction["blood_image_url"] = signed.get("signedURL") or signed.get("signedUrl") or ""
+            except Exception:
+                pass
+                
+        if raw_input.get("ecg_image_path"):
+            try:
+                signed = supabase.storage.from_("reports").create_signed_url(raw_input.get("ecg_image_path"), 3600)
+                prediction["ecg_image_url"] = signed.get("signedURL") or signed.get("signedUrl") or ""
+            except Exception:
+                pass
+
         for report in prediction.get("reports") or []:
             path = report.get("pdf_storage_path")
             if path:

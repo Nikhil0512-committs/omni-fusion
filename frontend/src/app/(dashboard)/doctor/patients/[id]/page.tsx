@@ -271,6 +271,17 @@ export default function PatientDetailsPage() {
                     <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase tracking-wider">ECG Explainability Heatmap</h4>
                     <img src={pred.reports[0].ecgImageUrl} alt="ECG model attention heatmap" className="w-full rounded-2xl border border-slate-800 bg-white" />
                   </div>
+                ) : pred.ecgImageUrl ? (
+                  <div className="mb-5">
+                    <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase tracking-wider">Uploaded ECG</h4>
+                    <img src={pred.ecgImageUrl} alt="Uploaded ECG image" className="w-full rounded-2xl border border-slate-800 bg-white" />
+                  </div>
+                ) : null}
+                {pred.bloodImageUrl ? (
+                  <div className="mb-5">
+                    <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase tracking-wider">Uploaded Blood Report</h4>
+                    <img src={pred.bloodImageUrl} alt="Uploaded blood report" className="w-full rounded-2xl border border-slate-800 bg-white" />
+                  </div>
                 ) : null}
                 <ClinicalSummaryCard predictionId={pred.id} />
 

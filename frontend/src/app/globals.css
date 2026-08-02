@@ -28,3 +28,32 @@
 .report-saved-notice{border-color:#ccebe4;background:#f1fbf8;color:#138b7e}.report-saved-notice strong{color:#176b64}.report-saved-notice span{color:#638a84}.report-saved-notice a{color:#0b7d74;font-weight:700}
 .top-actions{margin-left:auto}
 .min-h-screen.bg-slate-950 select,.min-h-screen.bg-slate-950 textarea{background:#f8fbfb!important;border-color:#d8e6e8!important;color:#173b4a!important}.min-h-screen.bg-slate-950 select:focus,.min-h-screen.bg-slate-950 textarea:focus{border-color:#36bbae!important;box-shadow:0 0 0 4px rgba(22,185,167,.12)}.min-h-screen.bg-slate-950 textarea::placeholder,.min-h-screen.bg-slate-950 input::placeholder{color:#91a5ad!important}.min-h-screen.bg-slate-950 select option{background:#fff;color:#173b4a}.min-h-screen.bg-slate-950 form .bg-slate-950{background:#f5f9fa!important;color:#536f7a!important;border-color:#d8e6e8!important}
+
+@media print {
+  /* Hide dashboard chrome (sidebar, top nav, overlays) */
+  .dashboard-sidebar, .topbar, .drawer-backdrop, .mobile-menu {
+    display: none !important;
+  }
+
+  /* Reset all scrolling and height constraints so the browser can paginate */
+  html, body, .dashboard-shell, .dashboard-stage, .dashboard-main {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Reset background and padding for the main wrapper */
+  .dashboard-main > div, .dashboard-main > main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Ensure page breaks don't happen inside critical elements */
+  img, svg, .rounded-xl, .rounded-2xl {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
