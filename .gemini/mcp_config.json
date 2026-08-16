@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ponytail": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "ponytail-mcp@latest"
+      ]
+    }
+  }
+}
