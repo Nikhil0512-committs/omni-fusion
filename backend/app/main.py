@@ -19,6 +19,7 @@ from app.api.v1 import (
     predictions_history,
     profiles,
     reports,
+    notifications,
 )
 
 # Setup logging
@@ -66,6 +67,7 @@ app.include_router(doctor_links.router, prefix="/api/v1/clinical", tags=["Clinic
 app.include_router(doctor_notes.router, prefix="/api/v1/clinical", tags=["Clinical"])
 app.include_router(analytics.router, prefix="/api/v1/clinical", tags=["Clinical"])
 app.include_router(patient_records.router, prefix="/api/v1/clinical", tags=["Clinical"])
+app.include_router(notifications.router, prefix="/api/v1/clinical", tags=["Clinical"])
 
 @app.on_event("startup")
 def startup_event():

@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     cors_origins: str = Field("http://localhost:3000", env='CORS_ORIGINS')
     environment: str = Field(default="development", env='ENVIRONMENT')
     gemini_api_key: Optional[str] = Field(None, env='GEMINI_API_KEY')
+    gemini_model: Optional[str] = Field(None, env='GEMINI_MODEL')
 
     @field_validator('supabase_service_role_key')
     @classmethod

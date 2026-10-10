@@ -9,10 +9,16 @@ torch.set_num_threads(1)
 import torch.nn.functional as F
 import numpy as np
 import sys
-sys.modules['numpy._core'] = np.core
-sys.modules['numpy._core.multiarray'] = np.core.multiarray
-sys.modules['numpy._core.numeric'] = np.core.numeric
-sys.modules['numpy._core.umath'] = np.core.umath
+
+# The persisted preprocessing artifacts were created with a NumPy build that
+# used the private ``numpy._core`` namespace.  NumPy 1.x exposes it as
+# ``numpy.core``.  Add compatibility aliases only for that old layout; adding
+# them on NumPy 2 corrupts NumPy's lazy imports and prevents SHAP from loading.
+if not hasattr(np, "_core"):
+    sys.modules.setdefault("numpy._core", np.core)
+    sys.modules.setdefault("numpy._core.multiarray", np.core.multiarray)
+    sys.modules.setdefault("numpy._core.numeric", np.core.numeric)
+    sys.modules.setdefault("numpy._core.umath", np.core.umath)
 import shap
 from captum.attr import LayerGradCam
 import matplotlib
